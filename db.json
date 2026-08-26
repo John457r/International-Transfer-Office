@@ -1,0 +1,91 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "user",
+      "password": "password",
+      "balance": 125000.5,
+      "accountNumber": "ITO-8829-1102",
+      "name": "John Doe",
+      "status": "active",
+      "role": "user",
+      "currency": "USD",
+      "currencyApproved": true,
+      "transfersEnabled": true,
+      "tc": "123456",
+      "vc": "654321",
+      "sc": "987654",
+      "currentTC": "",
+      "currentVC": "",
+      "currentSC": ""
+    },
+    {
+      "id": "2",
+      "username": "johnfidelis550@gmail.com",
+      "password": "Fidelis90@",
+      "balance": 0,
+      "accountNumber": "ADMIN-001",
+      "name": "System Administrator",
+      "status": "active",
+      "role": "admin",
+      "currency": "USD",
+      "currencyApproved": true,
+      "transfersEnabled": true,
+      "tc": "000000",
+      "vc": "000000",
+      "sc": "000000",
+      "currentTC": "",
+      "currentVC": "",
+      "currentSC": ""
+    },
+    {
+      "id": "3",
+      "username": "dummy_user",
+      "password": "dummypassword",
+      "balance": 1000,
+      "accountNumber": "ITO-DUMMY-001",
+      "name": "Dummy Verification User",
+      "status": "active",
+      "role": "user",
+      "currency": "USD",
+      "currencyApproved": true,
+      "transfersEnabled": true,
+      "tc": "111111",
+      "vc": "222222",
+      "sc": "333333",
+      "currentTC": "",
+      "currentVC": "",
+      "currentSC": ""
+    }
+  ],
+  "transfers": [
+    {
+      "id": "t1",
+      "userId": "1",
+      "bankName": "Global Bank",
+      "accountName": "Jane Smith",
+      "accountNumber": "9988776655",
+      "amount": 5000,
+      "status": "completed",
+      "date": "2024-03-20T10:00:00Z"
+    },
+    {
+      "id": "t2",
+      "userId": "1",
+      "bankName": "Swiss Trust",
+      "accountName": "Swiss Holding",
+      "accountNumber": "1122334455",
+      "amount": 15000,
+      "status": "pending",
+      "date": "2024-03-22T14:30:00Z"
+    }
+  ],
+  "collections": [],
+  "cardRequests": [],
+  "settings": {
+    "requireTransactionCode": true,
+    "requireVerificationCode": true,
+    "requireSwitchCode": true,
+    "transfersEnabled": true
+  }
+}
