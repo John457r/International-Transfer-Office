@@ -16,11 +16,13 @@ export default function Layout({ user, onLogout }: LayoutProps) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
   return (
-    <div className="flex h-screen bg-[#0F172A] text-slate-100 font-sans">
-      {/* Background Glows */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-34 -right-24 w-96 h-96 bg-[#3B82F6]/5 blur-[120px] rounded-full"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#1E293B]/30 blur-[120px] rounded-full"></div>
+    <div className="flex h-screen bg-[#0B0F17] text-slate-100 font-sans relative overflow-hidden">
+      {/* Deep Obsidian Grid Background & Glowing Amber Halos */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjQ1LCAxNTgsIDExLCAwLjE1KSIvPjwvc3ZnPg==')] opacity-30 mix-blend-screen" />
+        <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-[#F59E0B]/10 blur-[120px] rounded-full animate-pulse [animation-duration:10s]"></div>
+        <div className="absolute top-[60%] -left-[10%] w-[40%] h-[40%] bg-[#F59E0B]/5 blur-[100px] rounded-full animate-pulse [animation-duration:15s]"></div>
+        <div className="absolute top-[20%] left-[30%] w-[30%] h-[30%] bg-[#F59E0B]/5 blur-[120px] rounded-full"></div>
       </div>
       
       <Sidebar 
@@ -33,49 +35,50 @@ export default function Layout({ user, onLogout }: LayoutProps) {
       />
       
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <header className="h-20 flex items-center justify-between px-6 sm:px-10 z-10 border-b bg-[#1E293B]/85 backdrop-blur-xl border-[#3B82F6]/15">
+        <header className="h-20 flex items-center justify-between px-6 sm:px-10 z-10 border-b border-amber-500/10 bg-[#0B0F17]/60 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="lg:hidden p-3 text-[#3B82F6] hover:bg-white/5 transition-colors rounded-md"
+              className="lg:hidden p-3 text-[#F59E0B] hover:bg-white/5 transition-colors rounded-md"
             >
               <Menu size={24} />
             </button>
             
             <div className="hidden lg:block">
-              <h2 className="text-xl font-black uppercase tracking-tighter text-white">
-                {user.role === 'admin' ? 'Command Center' : 'Client Portal'}
+              <h2 className="text-xl font-black uppercase tracking-tighter text-white drop-shadow-[0_0_5px_rgba(245,158,11,0.2)]">
+                {user.role === 'admin' ? 'Command Center' : 'Client Terminal'}
               </h2>
-              <p className="text-[10px] font-bold text-[#3B82F6] uppercase tracking-[0.3em] mt-0.5">
+              <p className="text-[10px] font-bold text-[#F59E0B] uppercase tracking-[0.3em] mt-0.5 drop-shadow-[0_0_2px_rgba(245,158,11,0.5)]">
                 {user.role === 'admin' ? 'System Administration' : 'Secure Banking Interface'}
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-6 sm:gap-8">
-            <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-[#0F172A]/50 border border-[#3B82F6]/20 rounded">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-[#121824]/80 backdrop-blur-md border border-amber-500/20 rounded shadow-[0_0_10px_rgba(245,158,11,0.05)]">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
               <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">System Online</span>
             </div>
 
-            <button className="relative p-3 text-slate-400 hover:text-[#3B82F6] transition-colors">
+            <button className="relative p-3 text-[#8E9BAE] hover:text-[#F59E0B] hover:drop-shadow-[0_0_5px_rgba(245,158,11,0.8)] transition-all">
               <Bell size={20} />
-              <span className="absolute top-3 right-2 w-2 h-2 bg-[#3B82F6] rounded-full border-2 border-[#1E293B]"></span>
+              <span className="absolute top-3 right-2 w-2 h-2 bg-[#F59E0B] rounded-full border-2 border-[#121824] shadow-[0_0_5px_rgba(245,158,11,1)]"></span>
             </button>
             
-            <div className="flex items-center gap-6 pl-4 sm:pl-8 border-l border-[#3B82F6]/20">
+            <div className="flex items-center gap-6 pl-4 sm:pl-8 border-l border-amber-500/20">
               <div className="text-right hidden md:block">
                 <p className="text-sm font-black uppercase text-white leading-none">{user.name}</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-[#3B82F6] mt-1 opacity-70">{user.role}</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#F59E0B] mt-1 opacity-90 drop-shadow-[0_0_2px_rgba(245,158,11,0.5)]">{user.role}</p>
               </div>
-              <div className="w-10 h-10 flex items-center justify-center font-black text-base bg-gradient-to-br from-[#3B82F6] to-[#1E293B] text-[#0F172A] border border-[#3B82F6]/30 shadow-md">
-                {user.name.charAt(0)}
+              <div className="w-10 h-10 flex items-center justify-center font-black text-base bg-gradient-to-br from-[#F59E0B] to-[#b37000] text-[#0B0F17] border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.4)] relative">
+                <div className="absolute inset-0 bg-white/20 mix-blend-overlay"></div>
+                <span className="relative z-10">{user.name.charAt(0)}</span>
               </div>
             </div>
           </div>
         </header>
         
-        <main className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar">
+        <main className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar relative">
           <Outlet />
         </main>
       </div>

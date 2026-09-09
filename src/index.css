@@ -2,56 +2,56 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @theme {
-  --color-primary: #1E293B;
-  --color-primary-dark: #0F172A;
-  --color-accent: #3B82F6;
-  --color-accent-gold: #3B82F6;
-  --color-accent-hover: #60A5FA;
-  --color-accent-foreground: #0F172A;
+  --color-primary: #121824;
+  --color-primary-dark: #0B0F17;
+  --color-accent: #F59E0B;
+  --color-accent-gold: #F59E0B;
+  --color-accent-hover: #FF9500;
+  --color-accent-foreground: #0B0F17;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 body {
-  background-color: #0F172A;
+  background-color: #0B0F17;
   color: #E2E8F0;
   font-family: var(--font-sans);
   overflow-x: hidden;
   background-image: 
-    radial-gradient(at 50% 50%, rgba(23, 42, 69, 0.4) 0px, transparent 50%),
-    linear-gradient(rgba(23, 42, 69, 0.1) 1.5px, transparent 1.5px),
-    linear-gradient(90deg, rgba(23, 42, 69, 0.1) 1.5px, transparent 1.5px);
+    radial-gradient(at 50% 50%, rgba(18, 24, 36, 0.4) 0px, transparent 50%),
+    linear-gradient(rgba(18, 24, 36, 0.1) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(18, 24, 36, 0.1) 1.5px, transparent 1.5px);
   background-size: 100% 100%, 40px 40px, 40px 40px;
 }
 
 /* High-End Fintech Theme Cards */
 .fintech-bg {
-  background: #0F172A;
+  background: #0B0F17;
   min-height: 100vh;
 }
 
 .card-gradient {
-  background: #1E293B;
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: #121824;
+  border: 1px solid rgba(245, 158, 11, 0.15);
   box-shadow: 0 10px 30px -15px rgba(2, 12, 27, 0.7);
 }
 
 .glass-card {
-  background: rgba(23, 42, 69, 0.75);
+  background: rgba(18, 24, 36, 0.75);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.2);
   box-shadow: 0 10px 30px -10px rgba(2, 12, 27, 0.5);
-  border-radius: 6px;
+  border-radius: 0.75rem;
 }
 
 .gold-gradient {
-  background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 50%, #3B82F6 100%);
+  background: linear-gradient(135deg, #F59E0B 0%, #FF9500 50%, #F59E0B 100%);
   background-size: 200% 200%;
   animation: shimmer 5s ease infinite;
 }
 
 .accent-gradient {
-  background: linear-gradient(135deg, #3B82F6 0%, #1E293B 100%);
+  background: linear-gradient(135deg, #F59E0B 0%, #121824 100%);
 }
 
 @keyframes shimmer {
@@ -64,14 +64,14 @@ body {
 input, select, textarea {
   background-color: #ffffff !important;
   color: #000000 !important;
-  border: 1px solid rgba(212, 175, 55, 0.3) !important;
-  border-radius: 4px !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  border-radius: 0.5rem !important;
   transition: all 0.2s ease;
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: #3B82F6 !important;
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
+  border-color: #F59E0B !important;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
   background-color: #ffffff !important;
 }
 
@@ -85,21 +85,21 @@ input::placeholder {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0F172A;
+  background: #0B0F17;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1E293B;
+  background: #121824;
   border-radius: 3px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3B82F6;
+  background: #F59E0B;
 }
 
 .sidebar-gradient {
-  background: #1E293B;
-  border-right: 1px solid rgba(212, 175, 55, 0.15);
+  background: #121824;
+  border-right: 1px solid rgba(245, 158, 11, 0.15);
 }
 

@@ -37,26 +37,26 @@ export default function TransactionsPage({ user }: TransactionsPageProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-2xl font-black text-white uppercase tracking-tight">Transaction History</h1>
-          <p className="text-slate-400 text-xs">View and manage all your past transfers.</p>
+          <p className="text-[#8E9BAE] text-xs">View and manage all your past transfers.</p>
         </div>
-        <button className="inline-flex items-center gap-3 px-4 py-2.5 bg-[#3B82F6] text-[#0F172A] hover:bg-[#60A5FA] cursor-pointer rounded text-xs font-black uppercase tracking-wider transition-all shadow border border-[#3B82F6]/30">
+        <button className="inline-flex items-center gap-3 px-4 py-2.5 bg-[#F59E0B] text-[#0B0F17] hover:bg-[#FF9500] cursor-pointer rounded text-xs font-black uppercase tracking-wider transition-all shadow border border-[#1E2638]">
           <Download size={14} /> Export CSV
         </button>
       </div>
 
-      <div className="bg-[#1E293B] rounded-xl border border-[#3B82F6]/25 overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-[#3B82F6]/15 bg-[#0F172A]/40 flex flex-col sm:flex-row gap-6">
+      <div className="bg-[#121824] rounded-xl border border-[#1E2638] overflow-hidden shadow-2xl">
+        <div className="p-6 border-b border-[#1E2638] bg-[#0B0F17]/40 flex flex-col sm:flex-row gap-6">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9BAE]" size={16} />
             <input
               type="text"
               placeholder="Search by bank, name or account..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white text-black text-xs font-black placeholder:text-slate-505 border border-[#3B82F6]/30 rounded outline-none focus:border-[#3B82F6]"
+              className="w-full pl-9 pr-4 py-2 bg-white text-black text-xs font-black placeholder:text-[#8E9BAE] border border-[#1E2638] rounded outline-none focus:border-[#F59E0B]"
             />
           </div>
-          <button className="inline-flex items-center gap-3 px-4 py-2 bg-[#0F172A] border border-[#3B82F6]/35 rounded text-xs font-black text-slate-200 hover:text-white hover:border-[#3B82F6] uppercase tracking-widest transition-colors">
+          <button className="inline-flex items-center gap-3 px-4 py-2 bg-[#0B0F17] border border-[#1E2638] rounded text-xs font-black text-slate-200 hover:text-white hover:border-[#F59E0B] uppercase tracking-widest transition-colors">
             <Filter size={14} /> Filter
           </button>
         </div>
@@ -64,7 +64,7 @@ export default function TransactionsPage({ user }: TransactionsPageProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#0F172A]/60 text-[#3B82F6] text-[9px] uppercase tracking-widest font-black border-b border-[#3B82F6]/15">
+              <tr className="bg-[#0B0F17]/60 text-[#F59E0B] text-[9px] uppercase tracking-widest font-black border-b border-[#1E2638]">
                 <th className="px-6 py-4">Transaction Details</th>
                 <th className="px-6 py-4">Recipient</th>
                 <th className="px-6 py-4">Date / Time</th>
@@ -72,28 +72,28 @@ export default function TransactionsPage({ user }: TransactionsPageProps) {
                 <th className="px-6 py-4">Cleared Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#3B82F6]/10">
+            <tbody className="divide-y divide-[#1E2638]">
               {filteredTransfers.length > 0 ? (
                 filteredTransfers.map((t) => (
-                  <tr key={t.id} className="hover:bg-[#0F172A]/30 transition-colors">
+                  <tr key={t.id} className="hover:bg-[#0B0F17]/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-5">
-                        <div className="w-8 h-8 rounded bg-[#0F172A] text-[#3B82F6] flex items-center justify-center border border-[#3B82F6]/20">
+                        <div className="w-8 h-8 rounded bg-[#0B0F17] text-[#F59E0B] flex items-center justify-center border border-[#1E2638]">
                           <ArrowUpRight size={14} />
                         </div>
                         <div>
                           <p className="text-xs font-black text-white uppercase tracking-tight">{t.bankName}</p>
-                          <p className="text-[9px] text-[#3B82F6] font-bold uppercase tracking-wider">Wire Remittance</p>
+                          <p className="text-[9px] text-[#F59E0B] font-bold uppercase tracking-wider">Wire Remittance</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-xs font-bold text-slate-200 uppercase">{t.accountName}</p>
-                      <p className="text-[10px] text-slate-450 font-mono tracking-widest">{t.accountNumber}</p>
+                      <p className="text-[10px] text-[#8E9BAE] font-mono tracking-widest">{t.accountNumber}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-xs text-slate-300 font-mono font-medium">{new Date(t.date).toLocaleDateString()}</p>
-                      <p className="text-[9px] text-slate-450 font-mono">{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-xs text-[#8E9BAE] font-mono font-medium">{new Date(t.date).toLocaleDateString()}</p>
+                      <p className="text-[9px] text-[#8E9BAE] font-mono">{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-xs font-black text-white font-mono">-{formatCurrency(t.amount, user.currency)}</p>
@@ -114,7 +114,7 @@ export default function TransactionsPage({ user }: TransactionsPageProps) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-bold uppercase tracking-widest text-[10px]">
+                  <td colSpan={5} className="px-6 py-12 text-center text-[#8E9BAE] font-bold uppercase tracking-widest text-[10px]">
                     No transactions found matching your search.
                   </td>
                 </tr>

@@ -70,34 +70,34 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0F172A] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#0B0F17] relative overflow-hidden">
       {/* Background patterns */}
       <div className="absolute inset-0 opacity-15 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#3B82F6] blur-[150px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#3B82F6] blur-[150px]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#F59E0B] blur-[150px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#F59E0B] blur-[150px]"></div>
       </div>
 
-      <div className="w-full max-w-md p-10 bg-[#1E293B] rounded-lg shadow-2xl relative z-10 mx-4 border border-[#3B82F6]/20">
+      <div className="w-full max-w-md p-10 bg-[#121824] rounded-xl shadow-2xl relative z-10 mx-4 border border-[#1E2638]">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-[#0F172A] text-[#3B82F6] rounded-none mb-6 border-2 border-[#3B82F6] shadow-[4px_4px_0px_0px_#3B82F6]">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-[#0B0F17] text-[#F59E0B] rounded-none mb-6 border-2 border-[#F59E0B] shadow-[4px_4px_0px_0px_#F59E0B]">
             <ShieldCheck size={40} />
           </div>
-          <h1 className="text-4xl font-extrabold text-white tracking-tighter uppercase">ITO BANK</h1>
-          <p className="text-[#3B82F6] font-bold tracking-[0.3em] uppercase text-[10px] mt-2">International Transfer Office</p>
-          <div className="h-0.5 w-12 bg-[#3B82F6] mx-auto mt-6"></div>
-          <p className="text-slate-400 mt-4 font-bold uppercase tracking-widest text-[9px]">Secure Access Protocol</p>
+          <h1 className="text-4xl font-extrabold text-white tracking-tighter uppercase">INTERNET SUPPORT TEAM</h1>
+          <p className="text-[#F59E0B] font-bold tracking-[0.3em] uppercase text-[10px] mt-2">Internet Support Team</p>
+          <div className="h-0.5 w-12 bg-[#F59E0B] mx-auto mt-6"></div>
+          <p className="text-[#8E9BAE] mt-4 font-bold uppercase tracking-widest text-[9px]">Secure Access Protocol</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-3">
-            <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-widest">Username / Email</label>
+            <label className="block text-[10px] font-bold text-[#8E9BAE] uppercase tracking-widest">Username / Email</label>
             <div className="relative group">
-              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#3B82F6] transition-colors" size={20} />
+              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8E9BAE] group-focus-within:text-[#F59E0B] transition-colors" size={20} />
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white text-black font-semibold rounded outline-none placeholder:text-slate-400"
+                className="w-full pl-12 pr-4 py-3 bg-white text-black font-semibold rounded outline-none placeholder:text-[#8E9BAE]"
                 placeholder="ENTER USERNAME"
                 required
               />
@@ -105,14 +105,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           </div>
 
           <div className="space-y-3">
-            <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-widest">Password</label>
+            <label className="block text-[10px] font-bold text-[#8E9BAE] uppercase tracking-widest">Password</label>
             <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#3B82F6] transition-colors" size={20} />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8E9BAE] group-focus-within:text-[#F59E0B] transition-colors" size={20} />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white text-black font-semibold rounded outline-none placeholder:text-slate-400"
+                className="w-full pl-12 pr-4 py-3 bg-white text-black font-semibold rounded outline-none placeholder:text-[#8E9BAE]"
                 placeholder="ENTER PASSWORD"
                 required
               />
@@ -122,7 +122,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-[#3B82F6] text-[#0F172A] font-extrabold rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:bg-[#60A5FA] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-5 disabled:opacity-70 uppercase tracking-[0.2em] text-xs"
+            className="w-full py-4 bg-[#F59E0B] text-[#0B0F17] font-extrabold rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:bg-[#FF9500] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-5 disabled:opacity-70 uppercase tracking-[0.2em] text-xs"
           >
             {loading ? <Loader2 className="animate-spin" size={20} /> : (
               <>
@@ -134,13 +134,13 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         </form>
 
         <div className="mt-8 pt-6 border-t border-slate-700/50 text-center space-y-3">
-          <p className="text-[10px] text-slate-400 uppercase tracking-wider">
+          <p className="text-[10px] text-[#8E9BAE] uppercase tracking-wider">
             New Client?{" "}
-            <Link to="/register" className="text-[#3B82F6] font-bold hover:underline">
+            <Link to="/register" className="text-[#F59E0B] font-bold hover:underline">
               Create Secure Portfolio Account
             </Link>
           </p>
-          <p className="text-[9px] text-slate-500 uppercase tracking-[0.2em]">
+          <p className="text-[9px] text-[#8E9BAE] uppercase tracking-[0.2em]">
             256-bit Military Grade Encryption
           </p>
         </div>

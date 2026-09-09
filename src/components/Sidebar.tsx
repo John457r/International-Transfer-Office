@@ -15,6 +15,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Landmark,
   MessageSquare
 } from "lucide-react";
 import { User } from "../types";
@@ -30,25 +31,41 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ user, onLogout, isOpen, isMobileOpen, onClose, toggleSidebar }: SidebarProps) {
-  const userLinks = [
-    { to: "/dashboard", icon: LayoutDashboard, label: "Overview" },
-    { to: "/transfer", icon: Send, label: "Transfers" },
-    { to: "/transactions", icon: History, label: "History" },
-    { to: "/collection", icon: MessageSquare, label: "Messages" },
-    { to: "/card-request", icon: Smartphone, label: "ATM Card" },
-    { to: "/profile", icon: UserIcon, label: "Profile" },
+  const userGroups = [
+    {
+      title: "MAIN PORTAL",
+      links: [
+        { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        { to: "/transfer", icon: Send, label: "Wire Transfer" },
+        { to: "/transactions", icon: History, label: "Transaction History" },
+      ]
+    },
+    {
+      title: "SERVICES & BANKING",
+      links: [
+        { to: "/collection", icon: Landmark, label: "Bank Link" },
+        { to: "/card-request", icon: Smartphone, label: "ATM Cards" },
+        { to: "/profile", icon: UserIcon, label: "Profile" },
+      ]
+    }
   ];
 
-  const adminLinks = [
-    { to: "/admin", icon: LayoutDashboard, label: "Admin Panel" },
-    { to: "/admin/users", icon: Users, label: "Users" },
-    { to: "/admin/transfers", icon: FileText, label: "Transfers" },
-    { to: "/admin/collections", icon: CreditCard, label: "Collections" },
-    { to: "/admin/card-requests", icon: Smartphone, label: "Cards" },
-    { to: "/admin/settings", icon: Settings, label: "Security" },
+  const adminGroups = [
+    {
+      title: "ADMINISTRATION",
+      links: [
+        { to: "/admin", icon: LayoutDashboard, label: "Control Center" },
+        { to: "/admin/users", icon: Users, label: "Users Hub" },
+        { to: "/admin/transfers", icon: FileText, label: "Transfers Ledger" },
+        { to: "/admin/collections", icon: CreditCard, label: "Collections" },
+        { to: "/admin/card-requests", icon: Smartphone, label: "Card Requests" },
+        { to: "/admin/chat", icon: MessageSquare, label: "Live Chat" },
+        { to: "/admin/settings", icon: Settings, label: "Global Settings" },
+      ]
+    }
   ];
 
-  const links = user.role === 'admin' ? adminLinks : userLinks;
+  const groups = user.role === 'admin' ? adminGroups : userGroups;
 
   return (
     <>
@@ -62,69 +79,82 @@ export default function Sidebar({ user, onLogout, isOpen, isMobileOpen, onClose,
       />
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 flex flex-col h-full z-50 transition-all duration-500 lg:relative border-r border-[#3B82F6]/20",
-        "bg-[#1E293B] text-slate-200",
+        "fixed inset-y-0 left-0 flex flex-col h-full z-50 transition-all duration-500 lg:relative border-r border-[#1E2638]",
+        "bg-[#121824] text-slate-200",
         isOpen ? "w-64" : "w-20",
         isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Desktop Toggle Button */}
         <button 
           onClick={toggleSidebar}
-          className="hidden lg:flex absolute -right-3 top-34 w-6 h-6 bg-[#3B82F6] text-[#0F172A] items-center justify-center rounded-full shadow-md z-50 border border-[#3B82F6]/30"
+          className="hidden lg:flex absolute -right-3 top-34 w-6 h-6 bg-[#F59E0B] text-[#0B0F17] items-center justify-center rounded-full shadow-md z-50 border border-[#1E2638]"
         >
           {isOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
         </button>
 
         <div className={cn(
-          "h-16 border-b border-[#3B82F6]/15 flex items-center px-6 transition-all duration-500",
+          "h-16 border-b border-[#1E2638] flex items-center px-6 transition-all duration-500",
           isOpen ? "justify-between" : "justify-center"
         )}>
           <div className={cn("flex items-center gap-5 overflow-hidden transition-all duration-500", isOpen ? "w-auto opacity-100" : "w-0 opacity-0")}>
-            <div className="w-8 h-8 flex items-center justify-center bg-[#0F172A] text-[#3B82F6] rounded-md border border-[#3B82F6]/30 shadow-md">
+            <div className="w-8 h-8 flex items-center justify-center bg-[#0B0F17] text-[#F59E0B] rounded-md border border-[#1E2638] shadow-md">
               <ShieldCheck size={18} />
             </div>
             <div className="whitespace-nowrap">
-              <h1 className="font-bold text-sm leading-tight tracking-tight text-[#3B82F6]">ITO BANK</h1>
-              <p className="text-[7px] font-bold tracking-widest uppercase text-slate-400">Intl. Transfer Office</p>
+              <h1 className="font-bold text-sm leading-tight tracking-tight text-[#F59E0B]">INTERNET SUPPORT TEAM</h1>
+              <p className="text-[7px] font-bold tracking-widest uppercase text-[#8E9BAE]">Intl. Transfer Office</p>
             </div>
           </div>
           
           {!isOpen && (
-            <div className="w-8 h-8 flex items-center justify-center bg-[#0F172A] text-[#3B82F6] rounded-md border border-[#3B82F6]/30">
+            <div className="w-8 h-8 flex items-center justify-center bg-[#0B0F17] text-[#F59E0B] rounded-md border border-[#1E2638]">
               <ShieldCheck size={18} />
             </div>
           )}
 
-          <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-white">
+          <button onClick={onClose} className="lg:hidden text-[#8E9BAE] hover:text-white">
             <X size={24} />
           </button>
         </div>
         
-        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              onClick={onClose}
-              className={({ isActive }) => cn(
-                "flex items-center gap-5 px-3 py-3 transition-all duration-200 group relative rounded-md text-xs font-medium",
-                isActive 
-                  ? "bg-[#0F172A] text-[#3B82F6] border-l-2 border-[#3B82F6] font-semibold"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-[#0F172A]/40"
-              )}
-            >
-              <link.icon size={18} className={cn("shrink-0 transition-colors", !isOpen && "mx-auto")} />
-              <span className={cn(
-                "whitespace-nowrap transition-all duration-500",
-                isOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10 absolute"
+        <nav className="flex-1 py-6 px-3 space-y-6 overflow-y-auto custom-scrollbar">
+          {groups.map((group, groupIdx) => (
+            <div key={groupIdx} className="space-y-1">
+              <div className={cn(
+                "px-4 text-[10px] font-black uppercase tracking-widest text-[#8E9BAE] mb-3 transition-all duration-500",
+                isOpen ? "opacity-100" : "opacity-0"
               )}>
-                {link.label}
-              </span>
-            </NavLink>
+                {isOpen ? group.title : ""}
+              </div>
+              
+              <div className="space-y-1">
+                {group.links.map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    onClick={onClose}
+                    className={({ isActive }) => cn(
+                      "flex items-center gap-5 px-3 py-3 transition-all duration-200 group relative rounded-md text-xs font-medium",
+                      isActive 
+                        ? "bg-[#1E2638] text-white border-l-2 border-[#F59E0B] font-semibold"
+                        : "text-[#8E9BAE] hover:text-slate-200 hover:bg-[#1E2638]/50"
+                    )}
+                  >
+                    <link.icon size={18} className={cn("shrink-0 transition-colors", !isOpen && "mx-auto")} />
+                    <span className={cn(
+                      "whitespace-nowrap transition-all duration-500",
+                      isOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10 absolute"
+                    )}>
+                      {link.label}
+                    </span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
         
-        <div className="p-6 border-t border-[#3B82F6]/15 bg-[#0F172A]/30">
+        <div className="p-6 border-t border-[#1E2638] bg-[#0B0F17]/30">
           <button
             onClick={onLogout}
             className={cn(

@@ -18,6 +18,7 @@ import AdminCollections from "./pages/AdminCollections";
 import AdminCardRequests from "./pages/AdminCardRequests";
 import CardRequestPage from "./pages/CardRequestPage";
 import AdminSettings from "./pages/AdminSettings";
+import AdminChat from "./pages/AdminChat";
 import Layout from "./components/Layout";
 import WhatsAppButton from "./components/WhatsAppButton";
 import { User } from "./types";
@@ -30,7 +31,6 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-
     const syncUser = async () => {
       try {
         const response = await fetch(`/api/user/${user.id}`);
@@ -80,20 +80,16 @@ export default function App() {
   return (
     <Router>
       <Toaster position="top-right" richColors />
-      <Routes>
-        {/* Landing and Public Pages */}
+        <Routes>
+          {/* Landing and Public Pages */}
         <Route path="/" element={<LandingPage />} />
         
-        <Route path="/login" element={!user ? <LoginPage onLogin={login} /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} />} />
-        <Route path="/register" element={!user ? <RegisterPage onRegister={login} /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} />} />
+        <Route path="/login" element={!user ? <LoginPage onLogin={login} /> : <Navigate to={user.role === 'admin' ? '/admin' : (user.isBlocked ? '/hold' : '/dashboard')} />} />
+        <Route path="/register" element={!user ? <RegisterPage onRegister={login} /> : <Navigate to={user.role === 'admin' ? '/admin' : (user.isBlocked ? '/hold' : '/dashboard')} />} />
         
         {/* User Routes */}
         <Route element={user && user.role === 'user' ? (
-          user.status === 'Pending Admin Review' ? (
-            <ComplianceHoldPage user={user} onLogout={logout} />
-          ) : (
-            <Layout user={user} onLogout={logout} />
-          )
+          user.isBlocked ? <Navigate to="/hold" replace /> : <Layout user={user} onLogout={logout} />
         ) : <Navigate to="/login" />}>
           <Route path="/dashboard" element={<Dashboard user={user!} />} />
           <Route path="/transfer" element={<TransferPage user={user!} />} />
@@ -104,6 +100,10 @@ export default function App() {
           <Route path="/card-request" element={<CardRequestPage user={user!} />} />
         </Route>
 
+        <Route path="/hold" element={user && user.role === 'user' ? (
+          user.isBlocked ? <ComplianceHoldPage user={user} onLogout={logout} /> : <Navigate to="/dashboard" replace />
+        ) : <Navigate to="/login" />} />
+
         {/* Admin Routes */}
         <Route element={user && user.role === 'admin' ? <Layout user={user} onLogout={logout} /> : <Navigate to="/login" />}>
           <Route path="/admin" element={<AdminDashboard />} />
@@ -112,11 +112,12 @@ export default function App() {
           <Route path="/admin/collections" element={<AdminCollections />} />
           <Route path="/admin/card-requests" element={<AdminCardRequests />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/chat" element={<AdminChat />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-      <WhatsAppButton />
+      <WhatsAppButton user={user} />
     </Router>
   );
 }

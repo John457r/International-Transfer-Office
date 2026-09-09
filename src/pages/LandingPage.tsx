@@ -1,8 +1,52 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, ArrowRight, Star, Globe, TrendingUp, Users, Award, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, ArrowRight, Globe, Star, CheckCircle2 } from "lucide-react";
+
+const Typewriter = ({ phrases }: { phrases: string[] }) => {
+  const [text, setText] = useState("");
+  const [phase, setPhase] = useState("typing");
+  const [phraseIndex, setPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const currentPhrase = phrases[phraseIndex];
+
+    if (phase === "typing") {
+      if (text.length < currentPhrase.length) {
+        timeout = setTimeout(() => setText(currentPhrase.slice(0, text.length + 1)), 50);
+      } else {
+        timeout = setTimeout(() => setPhase("pausing"), 2000);
+      }
+    } else if (phase === "pausing") {
+      setPhase("deleting");
+    } else if (phase === "deleting") {
+      if (text.length > 0) {
+        timeout = setTimeout(() => setText(currentPhrase.slice(0, text.length - 1)), 30);
+      } else {
+        setPhraseIndex((prev) => (prev + 1) % phrases.length);
+        setPhase("typing");
+      }
+    }
+
+    return () => clearTimeout(timeout);
+  }, [text, phase, phraseIndex, phrases]);
+
+  return (
+    <span className="text-[#F59E0B]">
+      {text}
+      <span className="animate-pulse">|</span>
+    </span>
+  );
+};
 
 export default function LandingPage() {
+  const phrases = [
+    "Private Banking Redefined",
+    "Instant Global Wire Routing",
+    "Institutional Security Protocol",
+    "24/7 Live Executive Support"
+  ];
+
   const testimonials = [
     {
       id: 1,
@@ -135,37 +179,46 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-white flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#0B0F17] text-white flex flex-col relative overflow-hidden">
       
-      {/* 4. REAL-TIME REMITTANCE TICKER */}
-      <div className="bg-[#1E293B] border-b border-[#3B82F6]/30 text-[10px] font-mono text-[#3B82F6] py-2 overflow-hidden whitespace-nowrap z-40 shadow-sm">
+      {/* Deep Obsidian Grid Background & Glowing Amber Halos */}
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#f59e0b18_1px,transparent_1px),linear-gradient(to_bottom,#f59e0b18_1px,transparent_1px)] bg-[size:36px_36px] pointer-events-none" />
+      
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute top-[10%] left-[10%] w-[600px] h-[600px] bg-amber-500/20 blur-[140px] rounded-full pointer-events-none z-0"></div>
+        <div className="absolute top-[40%] right-[5%] w-[600px] h-[600px] bg-amber-500/20 blur-[140px] rounded-full pointer-events-none z-0 animate-pulse [animation-duration:15s]"></div>
+        <div className="absolute bottom-[10%] left-[30%] w-[600px] h-[600px] bg-amber-500/20 blur-[140px] rounded-full pointer-events-none z-0"></div>
+      </div>
+
+      {/* REAL-TIME REMITTANCE TICKER */}
+      <div className="bg-[#121824]/80 backdrop-blur-md border-b border-amber-500/30 text-[10px] font-mono text-[#F59E0B] py-2 overflow-hidden whitespace-nowrap z-40 shadow-[0_0_15px_rgba(245,158,11,0.2)] relative">
         <div className="inline-block animate-[marquee_25s_linear_infinite]">
           • USD/PGK CORRIDOR STABLE • PORT MORESBY HUB: CLEARING UNDER 4 MINS • GBP JURISDICTION PROTOCOLS ACTIVE • SECURE TRANSFERS SECURED BY BPNG CORES • LEDGER TIMESTAMPS CALIBRATED • NO LAG REPORTED • USD/PGK CORRIDOR STABLE • PORT MORESBY HUB: CLEARING UNDER 4 MINS •
         </div>
       </div>
 
       {/* Hero Header */}
-      <header className="py-6 px-6 sm:px-12 flex justify-between items-center border-b border-slate-800">
+      <header className="py-6 px-6 sm:px-12 flex justify-between items-center border-b border-amber-500/20 bg-[#0B0F17]/50 backdrop-blur-xl relative z-10">
         <div className="flex items-center gap-5">
-          <div className="w-10 h-10 bg-[#1E293B] text-[#3B82F6] border border-[#3B82F6] flex items-center justify-center font-bold">
+          <div className="w-10 h-10 bg-[#121824] text-[#F59E0B] border border-amber-500/30 hover:border-amber-500/60 transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] flex items-center justify-center font-bold">
             <ShieldCheck size={22} />
           </div>
           <div>
-            <span className="font-extrabold text-lg tracking-wider block">ITO BANK</span>
-            <span className="text-[7.5px] font-black tracking-[0.3em] block text-slate-400">INTERNATIONAL TRANSFER</span>
+            <span className="font-extrabold text-lg tracking-wider block drop-shadow-[0_0_5px_rgba(245,158,11,0.2)]">INTERNET SUPPORT TEAM</span>
+            <span className="text-[7.5px] font-black tracking-[0.3em] block text-[#8E9BAE]">INTERNATIONAL TRANSFER</span>
           </div>
         </div>
 
         <div className="flex items-center gap-6">
           <Link 
             to="/login" 
-            className="text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-colors"
+            className="text-xs font-bold uppercase tracking-wider text-[#8E9BAE] hover:text-[#F59E0B] hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)] transition-colors"
           >
             Client Access
           </Link>
           <Link 
             to="/register" 
-            className="px-4 py-2 bg-[#3B82F6] text-[#0F172A] hover:bg-[#60A5FA] text-xs font-black uppercase tracking-wider transition-all"
+            className="px-4 py-2 bg-[#F59E0B] text-[#0B0F17] hover:bg-[#FF9500] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] border border-amber-500/30 text-xs font-black uppercase tracking-wider transition-all rounded-sm"
           >
             Digital Portfolio Setup
           </Link>
@@ -173,150 +226,157 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-6 sm:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+      <section className="py-20 px-6 sm:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10 flex-grow">
         <div className="space-y-6">
-          <div className="inline-flex items-center gap-3 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[9px] font-bold uppercase tracking-widest rounded-full">
+          <div className="inline-flex items-center gap-3 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[9px] font-bold uppercase tracking-widest rounded-full shadow-[0_0_10px_rgba(16,185,129,0.1)]">
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
             Core Routing Infrastructure Stable
           </div>
           
-          <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight text-white uppercase tracking-tight">
-            Seamless Cross-Border <br/>
-            <span className="text-[#3B82F6]">Remittance Clearing</span>
+          <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight text-white uppercase tracking-tight min-h-[120px]">
+            <Typewriter phrases={phrases} />
           </h1>
           
-          <p className="text-slate-400 text-sm leading-relaxed max-w-lg">
+          <p className="text-[#8E9BAE] text-sm leading-relaxed max-w-lg">
             Guaranteed secure financial clearances connecting Papua New Guinea with United States and United Kingdom jurisdictions. Authorize, settle, and track heavy trade remittances through correspondent channels protected by military-grade multi-stage key codes.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-6 pt-4">
             <Link 
               to="/register" 
-              className="w-full sm:w-auto px-6 py-4 bg-[#3B82F6] text-[#0F172A] hover:bg-[#60A5FA] hover:scale-[1.02] transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3"
+              className="w-full sm:w-auto px-6 py-4 bg-[#F59E0B] text-[#0B0F17] hover:bg-[#FF9500] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)] border border-amber-500/30 rounded-sm hover:scale-[1.02] transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3"
             >
               Request Portal Access <ArrowRight size={14} />
             </Link>
             <Link 
               to="/login" 
-              className="w-full sm:w-auto px-6 py-4 border border-slate-600 text-slate-200 hover:bg-[#1E293B]/60 hover:text-white transition-all text-xs font-bold uppercase tracking-widest text-center"
+              className="w-full sm:w-auto px-6 py-4 bg-[#121824]/40 border border-amber-500/30 text-slate-200 hover:bg-[#121824]/80 hover:border-amber-500/60 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:text-white transition-all text-xs font-bold uppercase tracking-widest text-center backdrop-blur-sm rounded-sm"
             >
               Sign In to Terminal
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 pt-10 border-t border-slate-800">
+          <div className="grid grid-cols-3 gap-6 pt-10 border-t border-amber-500/20 mt-10">
             <div>
-              <span className="block text-2xl font-extrabold text-[#3B82F6]">$2.4B+</span>
-              <span className="text-[9px] text-slate-400 uppercase font-semibold">Volume Handled</span>
+              <span className="block text-2xl font-extrabold text-[#F59E0B] drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">$2.4B+</span>
+              <span className="text-[9px] text-[#8E9BAE] uppercase font-semibold">Volume Handled</span>
             </div>
             <div>
               <span className="block text-2xl font-extrabold text-white">4 Mins</span>
-              <span className="text-[9px] text-slate-400 uppercase font-semibold">Standard Clearance</span>
+              <span className="text-[9px] text-[#8E9BAE] uppercase font-semibold">Standard Clearance</span>
             </div>
             <div>
               <span className="block text-2xl font-extrabold text-white">100%</span>
-              <span className="text-[9px] text-slate-400 uppercase font-semibold">Stage Protection</span>
+              <span className="text-[9px] text-[#8E9BAE] uppercase font-semibold">Stage Protection</span>
             </div>
           </div>
         </div>
 
-        {/* Hero Visual Card Panel */}
-        <div className="bg-[#1E293B] rounded-xl border border-[#3B82F6]/20 p-8 shadow-2xl space-y-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 text-slate-800 opacity-20 pointer-events-none">
+        {/* Hero Visual Card Panel - Glassmorphic */}
+        <div className="bg-[#0F172A]/60 backdrop-blur-xl rounded-xl border border-amber-500/30 p-8 shadow-[0_0_40px_rgba(245,158,11,0.15)] space-y-6 relative overflow-hidden group hover:border-amber-500/60 transition-all duration-500">
+          <div className="absolute top-0 right-0 p-8 text-amber-500 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity duration-500">
             <Globe size={160} />
           </div>
 
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start relative z-10">
             <div className="space-y-1">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">CLEARANCE ROUTE</span>
-              <h3 className="text-md font-bold tracking-tight">KINA CHANNELS / PORT MORESBY</h3>
+              <span className="text-[9px] font-bold text-[#8E9BAE] uppercase tracking-widest">CLEARANCE ROUTE</span>
+              <h3 className="text-md font-bold tracking-tight text-white">KINA CHANNELS / PORT MORESBY</h3>
             </div>
-            <span className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-bold uppercase tracking-widest rounded">
+            <span className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-bold uppercase tracking-widest rounded shadow-[0_0_10px_rgba(16,185,129,0.1)]">
               Verified Core
             </span>
           </div>
 
-          <div className="h-0.5 bg-slate-800 w-full" />
+          <div className="h-px bg-amber-500/20 w-full relative z-10" />
 
-          <div className="space-y-6">
-            <div className="bg-[#0F172A]/50 p-6 border border-slate-700/50 rounded-lg flex justify-between items-center">
+          <div className="space-y-6 relative z-10">
+            <div className="bg-[#0B0F17]/60 backdrop-blur-md p-6 border border-amber-500/20 hover:border-amber-500/40 rounded-xl flex justify-between items-center shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-colors">
               <div>
-                <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-widest">Base Rate</span>
+                <span className="block text-[8px] font-bold text-[#8E9BAE] uppercase tracking-widest">Base Rate</span>
                 <span className="text-xs font-bold text-slate-200">1.00 PGK - 0.25 USD</span>
               </div>
               <div className="text-right">
-                <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-widest">Fee Rate</span>
-                <span className="text-xs font-bold text-emerald-400">0.05% Surcharge</span>
+                <span className="block text-[8px] font-bold text-[#8E9BAE] uppercase tracking-widest">Fee Rate</span>
+                <span className="text-xs font-bold text-[#F59E0B]">0.05% Surcharge</span>
               </div>
             </div>
 
-            <div className="bg-[#0F172A]/50 p-6 border border-slate-700/50 rounded-lg space-y-3">
-              <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-widest">Jurisdictional Certifications</span>
+            <div className="bg-[#0B0F17]/60 backdrop-blur-md p-6 border border-amber-500/20 hover:border-amber-500/40 rounded-xl space-y-3 shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-colors">
+              <span className="block text-[8px] font-bold text-[#8E9BAE] uppercase tracking-widest">Jurisdictional Certifications</span>
               <div className="flex gap-3">
-                <span className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[9px] font-medium border border-slate-700">BPNG Core Ready</span>
-                <span className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[9px] font-medium border border-slate-700">US AML Approved</span>
-                <span className="px-2 py-0.5 bg-slate-800 text-slate-300 text-[9px] font-medium border border-slate-700">UK FCA Compliant</span>
+                <span className="px-2 py-0.5 bg-slate-900/80 text-[#8E9BAE] text-[9px] font-medium border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.1)]">BPNG Core Ready</span>
+                <span className="px-2 py-0.5 bg-slate-900/80 text-[#8E9BAE] text-[9px] font-medium border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.1)]">US AML Approved</span>
+                <span className="px-2 py-0.5 bg-slate-900/80 text-[#8E9BAE] text-[9px] font-medium border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.1)]">UK FCA Compliant</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Feature highlight Section */}
-      <section className="py-16 bg-[#0F172A] border-t border-slate-800/80">
+      {/* Feature highlight Section - Executive Style */}
+      <section className="py-20 bg-[#0B0F17]/40 backdrop-blur-md border-t border-amber-500/20 relative z-10">
         <div className="max-w-7xl mx-auto px-6 sm:px-12 text-center">
-          <span className="text-[#3B82F6] font-bold text-[10px] uppercase tracking-[0.2em] block mb-2">INTELLIGENT SYSTEM GATEWAY</span>
+          <span className="text-[#F59E0B] font-bold text-[10px] uppercase tracking-[0.2em] block mb-2 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]">INTELLIGENT SYSTEM GATEWAY</span>
           <h2 className="text-3xl font-extrabold text-white uppercase tracking-tight">Triple-Stage Protocol Authorization</h2>
-          <div className="h-0.5 w-16 bg-[#3B82F6] mx-auto mt-4 mb-10"></div>
+          <div className="h-px w-24 bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent mx-auto mt-6 mb-12"></div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-[#1E293B] p-6 rounded-lg border border-slate-800 text-left space-y-3">
-              <div className="w-10 h-10 bg-[#0F172A] border border-[#3B82F6]/30 text-[#3B82F6] flex items-center justify-center font-bold font-mono">01</div>
+            <div className="bg-[#0F172A]/60 backdrop-blur-xl p-8 rounded-xl border border-amber-500/20 text-left space-y-4 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] transition-all duration-300">
+              <div className="w-12 h-12 bg-[#0B0F17]/80 border border-amber-500/30 text-[#F59E0B] flex items-center justify-center font-bold font-mono shadow-[0_0_15px_rgba(245,158,11,0.2)] rounded-sm">01</div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-white">Transaction Code (TC)</h3>
-              <p className="text-xs text-slate-400">Initiates the ledger entry file on our cross-border routing database. Required for any initial remittance instruction.</p>
+              <p className="text-xs text-[#8E9BAE] leading-relaxed">Initiates the ledger entry file on our cross-border routing database. Required for any initial remittance instruction.</p>
             </div>
-            <div className="bg-[#1E293B] p-6 rounded-lg border border-slate-800 text-left space-y-3">
-              <div className="w-10 h-10 bg-[#0F172A] border border-[#3B82F6]/30 text-[#3B82F6] flex items-center justify-center font-bold font-mono">02</div>
+            <div className="bg-[#0F172A]/60 backdrop-blur-xl p-8 rounded-xl border border-amber-500/20 text-left space-y-4 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] transition-all duration-300">
+              <div className="w-12 h-12 bg-[#0B0F17]/80 border border-amber-500/30 text-[#F59E0B] flex items-center justify-center font-bold font-mono shadow-[0_0_15px_rgba(245,158,11,0.2)] rounded-sm">02</div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-white">Verification Code (VC)</h3>
-              <p className="text-xs text-slate-400">Secondary clearance layer validating currency reserves and sender identity against global compliance archives.</p>
+              <p className="text-xs text-[#8E9BAE] leading-relaxed">Secondary clearance layer validating currency reserves and sender identity against global compliance archives.</p>
             </div>
-            <div className="bg-[#1E293B] p-6 rounded-lg border border-slate-800 text-left space-y-3">
-              <div className="w-10 h-10 bg-[#0F172A] border border-[#3B82F6]/30 text-[#3B82F6] flex items-center justify-center font-bold font-mono">03</div>
+            <div className="bg-[#0F172A]/60 backdrop-blur-xl p-8 rounded-xl border border-amber-500/20 text-left space-y-4 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] transition-all duration-300">
+              <div className="w-12 h-12 bg-[#0B0F17]/80 border border-amber-500/30 text-[#F59E0B] flex items-center justify-center font-bold font-mono shadow-[0_0_15px_rgba(245,158,11,0.2)] rounded-sm">03</div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-white">Switch Code (SC)</h3>
-              <p className="text-xs text-slate-400">Final routing approval code establishing a direct correspondent gateway for instantaneous funds release.</p>
+              <p className="text-xs text-[#8E9BAE] leading-relaxed">Final routing approval code establishing a direct correspondent gateway for instantaneous funds release.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. EXACTLY 16 TESTIMONIALS SECTION */}
-      <section className="py-20 bg-[#1E293B]/30 border-t border-b border-slate-800">
+      {/* 4. EXACTLY 16 TESTIMONIALS SECTION - GLASSMORPHIC */}
+      <section className="py-20 bg-[#0B0F17]/20 border-t border-amber-500/20 relative z-10">
         <div className="max-w-7xl mx-auto px-6 sm:px-12">
           <div className="text-center mb-16">
-            <span className="text-[#3B82F6] font-bold text-[10px] uppercase tracking-[0.2em] block mb-2">PROVEN CORPORATE TRUST</span>
+            <span className="text-[#F59E0B] font-bold text-[10px] uppercase tracking-[0.2em] block mb-2 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]">PROVEN CORPORATE TRUST</span>
             <h2 className="text-3xl font-extrabold text-white uppercase tracking-tight">Verified Jurisdictional Reviews</h2>
-            <p className="text-xs text-slate-400 mt-2">Connecting Papua New Guinea, the United Kingdom, and the United States.</p>
-            <div className="h-0.5 w-16 bg-[#3B82F6] mx-auto mt-4"></div>
+            <p className="text-xs text-[#8E9BAE] mt-3">Connecting Papua New Guinea, the United Kingdom, and the United States.</p>
+            <div className="h-px w-24 bg-gradient-to-r from-transparent via-[#F59E0B] to-transparent mx-auto mt-6"></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {testimonials.map((t) => (
-              <div key={t.id} className="bg-[#1E293B] p-6 rounded-lg border border-[#3B82F6]/10 flex flex-col justify-between space-y-6 hover:border-[#3B82F6]/30 transition-all shadow-md">
+              <div key={t.id} className="bg-[#0F172A]/60 backdrop-blur-xl p-6 rounded-xl border border-amber-500/20 flex flex-col justify-between space-y-6 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)] transition-all duration-300">
                 <div className="space-y-3">
                   <div className="flex text-amber-400 gap-0.5">
-                    {[...Array(5)].map((_, i) => <Star key={i} size={10} fill="#3B82F6" className="text-[#3B82F6]" />)}
+                    {[...Array(5)].map((_, i) => <Star key={i} size={10} fill="#F59E0B" className="text-[#F59E0B] drop-shadow-[0_0_2px_rgba(245,158,11,0.8)]" />)}
                   </div>
                   <p className="text-[11px] text-slate-300 italic leading-relaxed">
                     "{t.text}"
                   </p>
                 </div>
 
-                <div className="pt-4 border-t border-slate-800">
-                  <span className="block text-xs font-bold text-white">{t.name}</span>
-                  <span className="block text-[9px] text-slate-400">{t.role}, {t.company}</span>
-                  <span className="block text-[8px] text-[#3B82F6] font-semibold tracking-wider uppercase mt-1">
-                    {t.location}
-                  </span>
+                <div className="pt-5 border-t border-amber-500/20 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F59E0B] to-[#b37000] flex items-center justify-center text-[#0B0F17] font-black text-[10px] shadow-[0_0_10px_rgba(245,158,11,0.3)]">
+                    {t.name.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      {t.name}
+                      <CheckCircle2 size={10} className="text-emerald-400 drop-shadow-[0_0_2px_rgba(16,185,129,0.8)]" />
+                    </span>
+                    <span className="block text-[9px] text-[#8E9BAE]">{t.role}, {t.company}</span>
+                    <span className="block text-[8px] text-[#F59E0B] font-semibold tracking-wider uppercase mt-0.5">
+                      {t.location}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -325,21 +385,20 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 sm:px-12 bg-[#0F172A] text-slate-500 text-xs border-t border-slate-800 text-center">
+      <footer className="py-12 px-6 sm:px-12 bg-[#0B0F17]/90 backdrop-blur-xl text-[#8E9BAE] text-xs border-t border-amber-500/30 text-center relative z-10">
         <div className="max-w-7xl mx-auto space-y-6">
-          <p className="uppercase tracking-widest text-[#3B82F6] text-[10px] font-bold">
+          <p className="uppercase tracking-widest text-[#F59E0B] text-[10px] font-bold drop-shadow-[0_0_2px_rgba(245,158,11,0.5)]">
             INTERNATIONAL TRANSFER OFFICE JURISDICTION DECK
           </p>
-          <p className="max-w-3xl mx-auto leading-relaxed text-[10px] text-slate-400">
+          <p className="max-w-3xl mx-auto leading-relaxed text-[10px] text-[#8E9BAE]">
             Deposits, remittances, and settlements instructions routing are secured in connection with local reserve clearinghouses of PNG (BPNG), the United Kingdom (BoE/FCA) and the United States (Fed reserve hubs). All credentials are compliant with AML directives. Continuous monitoring in effect.
           </p>
-          <div className="h-px bg-slate-800 w-24 mx-auto" />
-          <p className="text-[9px] text-slate-600">
-            © 2026 International Transfer Office. Protected by 256-bit AES encryption. Registered Port 3000.
+          <div className="h-px bg-amber-500/20 w-24 mx-auto" />
+          <p className="text-[9px] text-[#8E9BAE]">
+            © 2026 Internet Support Team. Protected by 256-bit AES encryption. Registered Port 3000.
           </p>
         </div>
       </footer>
-
     </div>
   );
 }

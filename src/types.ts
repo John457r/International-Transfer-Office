@@ -5,7 +5,8 @@ export interface User {
   balance: number;
   accountNumber: string;
   role: 'user' | 'admin';
-  status: 'active' | 'blocked' | 'Pending Admin Review';
+  status: 'active' | 'blocked' | 'Pending Admin Review' | 'APPROVED' | 'HOLD';
+  isBlocked?: boolean;
   currency: 'USD' | 'PGK' | 'NGN';
   currencyApproved: boolean;
   transfersEnabled: boolean;

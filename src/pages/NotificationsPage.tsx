@@ -28,7 +28,7 @@ export default function NotificationsPage() {
       time: "1 day ago",
       type: "info",
       icon: Info,
-      color: "text-[#3B82F6] bg-[#1E293B] border border-[#3B82F6]/35"
+      color: "text-[#F59E0B] bg-[#121824] border border-[#1E2638]"
     },
     {
       id: 4,
@@ -37,7 +37,7 @@ export default function NotificationsPage() {
       time: "3 days ago",
       type: "info",
       icon: Bell,
-      color: "text-slate-200 bg-[#1E293B] border border-[#3B82F6]/20"
+      color: "text-slate-200 bg-[#121824] border border-[#1E2638]"
     }
   ];
 
@@ -45,30 +45,30 @@ export default function NotificationsPage() {
     <div className="max-w-3xl mx-auto space-y-6 text-slate-200">
       <div>
         <h1 className="text-2xl font-black text-white uppercase tracking-tight">Notifications</h1>
-        <p className="text-slate-400 text-xs">Stay updated with your account activity and security alerts.</p>
+        <p className="text-[#8E9BAE] text-xs">Stay updated with your account activity and security alerts.</p>
       </div>
 
-      <div className="bg-[#1E293B] rounded-lg border border-[#3B82F6]/25 overflow-hidden shadow-2xl">
-        <div className="divide-y divide-[#3B82F6]/15">
+      <div className="bg-[#121824] rounded-xl border border-[#1E2638] overflow-hidden shadow-2xl">
+        <div className="divide-y divide-[#1E2638]">
           {notifications.map((n) => (
-            <div key={n.id} className="p-6 flex gap-6 hover:bg-[#0F172A]/40 transition-colors cursor-pointer group border-b last:border-b-0 border-[#3B82F6]/15">
+            <div key={n.id} className="p-6 flex gap-6 hover:bg-[#0B0F17]/40 transition-colors cursor-pointer group border-b last:border-b-0 border-[#1E2638]">
               <div className={cn("w-12 h-12 rounded flex items-center justify-center shrink-0 transition-transform group-hover:scale-105", n.color)}>
                 <n.icon size={20} />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="font-extrabold text-white uppercase tracking-tight text-sm">{n.title}</h3>
-                  <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
+                  <span className="text-[9px] font-bold text-[#8E9BAE] flex items-center gap-1 uppercase tracking-wider">
                     <Clock size={11} /> {n.time}
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 leading-normal font-medium uppercase font-mono">{n.message}</p>
+                <p className="text-xs text-[#8E9BAE] leading-normal font-medium uppercase font-mono">{n.message}</p>
               </div>
             </div>
           ))}
         </div>
-        <div className="p-6 bg-[#0F172A]/60 text-center border-t border-[#3B82F6]/15">
-          <button className="text-xs font-black text-[#3B82F6] hover:text-[#60A5FA] uppercase tracking-widest transition-colors">Mark all as read</button>
+        <div className="p-6 bg-[#0B0F17]/60 text-center border-t border-[#1E2638]">
+          <button className="text-xs font-black text-[#F59E0B] hover:text-[#FF9500] uppercase tracking-widest transition-colors">Mark all as read</button>
         </div>
       </div>
     </div>

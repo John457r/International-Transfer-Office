@@ -51,31 +51,31 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0F172A] py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#0B0F17] py-12 px-4 relative overflow-hidden">
       {/* Subtle Vector Background */}
       <div className="absolute inset-0 opacity-15 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#3B82F6]/20 blur-[120px] rounded-full"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#3B2D13] blur-[120px] rounded-full"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/30 blur-[120px] rounded-full"></div>
       </div>
 
-      <div className="w-full max-w-lg p-8 bg-[#1E293B] rounded-lg shadow-2xl relative z-10 border border-[#3B82F6]/20">
+      <div className="w-full max-w-lg p-8 bg-[#121824] rounded-xl shadow-2xl relative z-10 border border-[#1E2638]">
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0F172A] text-[#3B82F6] rounded-none mb-4 border-2 border-[#3B82F6] shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0B0F17] text-[#F59E0B] rounded-none mb-4 border-2 border-[#F59E0B] shadow-lg">
             <ShieldCheck size={32} />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight uppercase">INTERNATIONAL GATEWAY</h1>
-          <p className="text-[#3B82F6] font-semibold tracking-wider uppercase text-[9px] mt-1">
+          <p className="text-[#F59E0B] font-semibold tracking-wider uppercase text-[9px] mt-1">
             Secure Institutional Self-Registration
           </p>
-          <div className="h-0.5 w-16 bg-[#3B82F6] mx-auto mt-4"></div>
+          <div className="h-0.5 w-16 bg-[#F59E0B] mx-auto mt-4"></div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-1">
-              <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-wider">Full Name</label>
+              <label className="block text-[9px] font-bold text-[#8E9BAE] uppercase tracking-wider">Full Name</label>
               <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9BAE]" size={16} />
                 <input
                   type="text"
                   value={name}
@@ -88,9 +88,9 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-wider">Email Address</label>
+              <label className="block text-[9px] font-bold text-[#8E9BAE] uppercase tracking-wider">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9BAE]" size={16} />
                 <input
                   type="email"
                   value={email}
@@ -105,9 +105,9 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-1">
-              <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-wider">Phone Number</label>
+              <label className="block text-[9px] font-bold text-[#8E9BAE] uppercase tracking-wider">Phone Number</label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9BAE]" size={16} />
                 <input
                   type="tel"
                   value={phone}
@@ -120,9 +120,9 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-wider">Country Jurisdiction</label>
+              <label className="block text-[9px] font-bold text-[#8E9BAE] uppercase tracking-wider">Country Jurisdiction</label>
               <div className="relative">
-                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9BAE]" size={16} />
                 <select
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
@@ -139,9 +139,9 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-1">
-              <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-wider">Requested Username</label>
+              <label className="block text-[9px] font-bold text-[#8E9BAE] uppercase tracking-wider">Requested Username</label>
               <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9BAE]" size={16} />
                 <input
                   type="text"
                   value={username}
@@ -154,9 +154,9 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-wider">Secure Password</label>
+              <label className="block text-[9px] font-bold text-[#8E9BAE] uppercase tracking-wider">Secure Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9BAE]" size={16} />
                 <input
                   type="password"
                   value={password}
@@ -172,7 +172,7 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-[#3B82F6] text-[#0F172A] font-bold uppercase tracking-widest text-xs hover:bg-[#60A5FA] active:translate-y-0.5 transition-all flex items-center justify-center gap-3 mt-2 shadow-lg"
+            className="w-full py-3 bg-[#F59E0B] text-[#0B0F17] font-bold uppercase tracking-widest text-xs hover:bg-[#FF9500] active:translate-y-0.5 transition-all flex items-center justify-center gap-3 mt-2 shadow-lg"
           >
             {loading ? <Loader2 className="animate-spin" size={18} /> : (
               <>
@@ -184,9 +184,9 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
         </form>
 
         <div className="mt-6 pt-4 border-t border-slate-700/50 text-center">
-          <p className="text-[10px] text-slate-400 uppercase tracking-wider">
+          <p className="text-[10px] text-[#8E9BAE] uppercase tracking-wider">
             Already registered?{" "}
-            <Link to="/login" className="text-[#3B82F6] font-bold hover:underline">
+            <Link to="/login" className="text-[#F59E0B] font-bold hover:underline">
               Secure Login HERE
             </Link>
           </p>
