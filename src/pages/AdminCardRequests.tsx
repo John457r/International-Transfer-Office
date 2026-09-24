@@ -3,13 +3,14 @@ import { CardRequest } from "../types";
 import { cn } from "../lib/utils";
 import { Search, CheckCircle2, XCircle, Clock, MapPin, Phone, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
+import { adminFetch } from "../lib/api";
 
 export default function AdminCardRequests() {
   const [requests, setRequests] = useState<CardRequest[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchRequests = () => {
-    fetch("/api/admin/card-requests")
+    adminFetch("/api/admin/card-requests")
       .then(res => res.json())
       .then(data => setRequests(data));
   };
@@ -20,7 +21,7 @@ export default function AdminCardRequests() {
 
   const handleStatusUpdate = async (id: string, status: 'approved' | 'rejected') => {
     try {
-      const response = await fetch(`/api/admin/card-requests/${id}`, {
+      const response = await adminFetch(`/api/admin/card-requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),

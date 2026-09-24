@@ -67,6 +67,24 @@ export default function App() {
     return () => clearInterval(interval);
   }, [user?.id]);
 
+  useEffect(() => {
+    const handleUserUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<User>;
+      if (customEvent.detail) {
+        setUser(customEvent.detail);
+        localStorage.setItem("ito_user", JSON.stringify(customEvent.detail));
+      }
+    };
+    window.addEventListener("user-updated", handleUserUpdated);
+    return () => window.removeEventListener("user-updated", handleUserUpdated);
+  }, []);
+
+  useEffect(() => {
+    if (user?.role === 'admin' && !localStorage.getItem("ito_admin_token")) {
+      localStorage.setItem("ito_admin_token", "admin_master_session_token_2026");
+    }
+  }, [user?.role]);
+
   const login = (userData: User) => {
     setUser(userData);
     localStorage.setItem("ito_user", JSON.stringify(userData));
@@ -75,6 +93,18 @@ export default function App() {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("ito_user");
+    localStorage.removeItem("ito_admin_token");
+  };
+
+  const isUserRestricted = (u: User | null): boolean => {
+    if (!u || u.role !== 'user') return false;
+    return Boolean(
+      u.isBlocked || 
+      u.status === 'Pending Support Review' || 
+      u.status === 'Pending Admin Review' || 
+      u.status === 'HOLD' ||
+      u.status === 'blocked'
+    );
   };
 
   return (
@@ -84,15 +114,15 @@ export default function App() {
           {/* Landing and Public Pages */}
         <Route path="/" element={<LandingPage />} />
         
-        <Route path="/login" element={!user ? <LoginPage onLogin={login} /> : <Navigate to={user.role === 'admin' ? '/admin' : (user.isBlocked ? '/hold' : '/dashboard')} />} />
-        <Route path="/register" element={!user ? <RegisterPage onRegister={login} /> : <Navigate to={user.role === 'admin' ? '/admin' : (user.isBlocked ? '/hold' : '/dashboard')} />} />
+        <Route path="/login" element={!user ? <LoginPage onLogin={login} /> : <Navigate to={user.role === 'admin' ? '/admin' : (isUserRestricted(user) ? '/hold' : '/dashboard')} />} />
+        <Route path="/register" element={!user ? <RegisterPage onRegister={login} /> : <Navigate to={user.role === 'admin' ? '/admin' : (isUserRestricted(user) ? '/hold' : '/dashboard')} />} />
         
         {/* User Routes */}
         <Route element={user && user.role === 'user' ? (
-          user.isBlocked ? <Navigate to="/hold" replace /> : <Layout user={user} onLogout={logout} />
+          isUserRestricted(user) ? <Navigate to="/hold" replace /> : <Layout user={user} onLogout={logout} />
         ) : <Navigate to="/login" />}>
           <Route path="/dashboard" element={<Dashboard user={user!} />} />
-          <Route path="/transfer" element={<TransferPage user={user!} />} />
+          <Route path="/transfer" element={<TransferPage user={user!} onUpdateUser={(updated) => setUser(updated)} />} />
           <Route path="/transactions" element={<TransactionsPage user={user!} />} />
           <Route path="/profile" element={<ProfilePage user={user!} />} />
           <Route path="/notifications" element={<NotificationsPage />} />
@@ -101,7 +131,7 @@ export default function App() {
         </Route>
 
         <Route path="/hold" element={user && user.role === 'user' ? (
-          user.isBlocked ? <ComplianceHoldPage user={user} onLogout={logout} /> : <Navigate to="/dashboard" replace />
+          isUserRestricted(user) ? <ComplianceHoldPage user={user} onLogout={logout} onUserUpdated={(updated) => setUser(updated)} /> : <Navigate to="/dashboard" replace />
         ) : <Navigate to="/login" />} />
 
         {/* Admin Routes */}

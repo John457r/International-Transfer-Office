@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { User } from "../types";
 import { formatCurrency, cn } from "../lib/utils";
-import { Search, Plus, UserX, UserCheck, Shield, MoreVertical, Loader2, TrendingUp } from "lucide-react";
+import { Search, Plus, UserX, UserCheck, Shield, MoreVertical, Loader2, TrendingUp, Copy, Check, KeyRound, ShieldAlert, ShieldCheck, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { adminFetch } from "../lib/api";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [editingBalances, setEditingBalances] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'active'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({
     username: "",
     password: "",
@@ -19,19 +22,31 @@ export default function AdminUsers() {
     currency: "USD",
     tc: "",
     vc: "",
-    sc: ""
+    sc: "",
+    activationPin: ""
   });
 
   const fetchUsers = () => {
-    fetch("/api/admin/users")
+    adminFetch("/api/admin/users")
       .then(res => res.json())
       .then(data => setUsers(data))
       .catch(() => {});
   };
 
+  const copyPinToClipboard = (pin: string, userId: string, name: string) => {
+    if (!pin) {
+      toast.error("No Activation PIN available for this user");
+      return;
+    }
+    navigator.clipboard.writeText(pin);
+    setCopiedId(userId);
+    setTimeout(() => setCopiedId(null), 2500);
+    toast.success(`Copied Activation PIN (${pin}) for ${name} to clipboard!`);
+  };
+
   const updateUser = async (id: string, updates: Partial<User>) => {
     try {
-      const response = await fetch(`/api/admin/users/${id}`, {
+      const response = await adminFetch(`/api/admin/users/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
@@ -55,7 +70,7 @@ export default function AdminUsers() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch("/api/admin/users", {
+      const response = await adminFetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser),
@@ -68,7 +83,7 @@ export default function AdminUsers() {
         });
         setShowAddModal(false);
         fetchUsers();
-        setNewUser({ username: "", password: "", name: "", balance: "", accountNumber: "", currency: "USD", tc: "", vc: "", sc: "" });
+        setNewUser({ username: "", password: "", name: "", balance: "", accountNumber: "", currency: "USD", tc: "", vc: "", sc: "", activationPin: "" });
       }
     } catch (error) {
       toast.error("Failed to create user");
@@ -80,7 +95,7 @@ export default function AdminUsers() {
   const toggleUserStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
     try {
-      const response = await fetch(`/api/admin/users/${id}`, {
+      const response = await adminFetch(`/api/admin/users/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -94,38 +109,93 @@ export default function AdminUsers() {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.accountNumber.includes(searchTerm)
-  );
+  const isUserPending = (u: User) => {
+    return u.role !== 'admin' && Boolean(
+      u.isBlocked || 
+      u.status === 'Pending Support Review' || 
+      u.status === 'Pending Admin Review' || 
+      u.status === 'HOLD'
+    );
+  };
+
+  const pendingCount = users.filter(isUserPending).length;
+
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = 
+      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.accountNumber.includes(searchTerm);
+    if (!matchesSearch) return false;
+
+    if (statusFilter === 'pending') return isUserPending(u);
+    if (statusFilter === 'active') return !isUserPending(u) && u.role !== 'admin';
+    return true;
+  });
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 text-slate-100">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-black text-white uppercase tracking-tight">User Management</h1>
-          <p className="text-xs text-[#8E9BAE] font-medium">Create, manage, and monitor system users.</p>
+          <h1 className="text-2xl font-black text-white uppercase tracking-tight">User Management & Activation</h1>
+          <p className="text-xs text-[#8E9BAE] font-medium">Review pending user registrations, activate terminals, and manage accounts.</p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-3 px-4 py-2.5 bg-[#F59E0B] text-[#0B0F17] rounded-md text-xs font-black uppercase tracking-wider hover:bg-[#FF9500] transition-all border border-[#1E2638] shadow"
+          className="inline-flex items-center gap-3 px-4 py-2.5 bg-[#F59E0B] text-[#0B0F17] rounded-md text-xs font-black uppercase tracking-wider hover:bg-[#FF9500] transition-all border border-[#1E2638] shadow cursor-pointer"
         >
           <Plus size={16} /> Create New User
         </button>
       </div>
 
       <div className="bg-[#121824] rounded-xl border border-[#1E2638] overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-[#1E2638] bg-[#0B0F17]/40 flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b border-[#1E2638] bg-[#0B0F17]/40 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="relative max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9BAE]" size={16} />
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search users by name, username, account..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-[#0B0F17] text-white border border-[#1E2638] rounded-md focus:border-[#F59E0B] focus:ring-0 outline-none text-xs font-medium !bg-[#0B0F17] !text-white !border-[#1E2638]"
             />
+          </div>
+
+          {/* Quick Filter Tabs for Support Team */}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={cn(
+                "px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border",
+                statusFilter === 'all'
+                  ? "bg-[#1E2638] text-white border-slate-600"
+                  : "bg-[#0B0F17] text-[#8E9BAE] border-[#1E2638] hover:text-white"
+              )}
+            >
+              All Users ({users.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={cn(
+                "px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-1.5",
+                statusFilter === 'pending'
+                  ? "bg-amber-950/70 text-amber-300 border-amber-500/50 shadow"
+                  : "bg-[#0B0F17] text-amber-400/80 border-amber-500/30 hover:text-amber-300"
+              )}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+              Pending Support Activation ({pendingCount})
+            </button>
+            <button
+              onClick={() => setStatusFilter('active')}
+              className={cn(
+                "px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border",
+                statusFilter === 'active'
+                  ? "bg-emerald-950/70 text-emerald-300 border-emerald-500/50"
+                  : "bg-[#0B0F17] text-slate-400 border-[#1E2638] hover:text-white"
+              )}
+            >
+              Active & Approved
+            </button>
           </div>
         </div>
 
@@ -137,9 +207,10 @@ export default function AdminUsers() {
                 <th className="px-6 py-4">Account Details</th>
                 <th className="px-6 py-4">Balance (Editable)</th>
                 <th className="px-6 py-4">Security Codes</th>
+                <th className="px-6 py-4">Terminal PIN (KYC)</th>
                 <th className="px-6 py-4">Live Monitor</th>
                 <th className="px-6 py-4">Custom Error Message</th>
-                <th className="px-6 py-4">Actions</th>
+                <th className="px-6 py-4">Support Team Activation & Review</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1E2638]">
@@ -204,6 +275,45 @@ export default function AdminUsers() {
                       <p><span className="font-bold text-[#F59E0B]">TC:</span> {u.tc}</p>
                       <p><span className="font-bold text-[#F59E0B]">VC:</span> {u.vc}</p>
                       <p><span className="font-bold text-[#F59E0B]">SC:</span> {u.sc}</p>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-black text-[#F59E0B] tracking-widest bg-[#0B0F17] px-2.5 py-1 rounded border border-amber-500/40 shadow-inner select-all">
+                          {u.activationPin || "------"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => copyPinToClipboard(u.activationPin || "", u.id, u.name)}
+                          title="Copy Activation PIN to send via Live Chat"
+                          className="p-1.5 bg-[#0B0F17] hover:bg-[#F59E0B] hover:text-[#0B0F17] text-slate-300 rounded transition-all cursor-pointer border border-[#1E2638] active:scale-95 flex items-center justify-center shadow"
+                        >
+                          {copiedId === u.id ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn(
+                          "px-2 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider border flex items-center gap-1",
+                          u.isTerminalVerified 
+                            ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/30" 
+                            : "bg-amber-950/40 text-amber-400 border-amber-500/30"
+                        )}>
+                          {u.isTerminalVerified ? <ShieldCheck size={10} /> : <ShieldAlert size={10} />}
+                          {u.isTerminalVerified ? "Verified" : "Unverified"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateUser(u.id, { isTerminalVerified: !u.isTerminalVerified });
+                            toast.success(`Terminal status updated to ${!u.isTerminalVerified ? 'Verified' : 'Unverified'}`);
+                          }}
+                          className="text-[8px] text-[#8E9BAE] hover:text-white underline cursor-pointer"
+                          title="Toggle terminal verification status"
+                        >
+                          Toggle
+                        </button>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -279,38 +389,67 @@ export default function AdminUsers() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "flex items-center justify-center px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest border",
-                        !u.isBlocked ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/20" : "bg-red-950/40 text-red-500 border-red-500/20"
-                      )}>
-                        {!u.isBlocked ? "APPROVED" : "ON HOLD"}
+                    {u.role === 'admin' ? (
+                      <span className="text-[9px] font-mono text-[#8E9BAE] uppercase">System Admin</span>
+                    ) : (
+                      <div className="flex flex-col gap-2 min-w-[210px]">
+                        <div className="flex items-center gap-2">
+                          {(u.isBlocked || u.status === 'Pending Support Review' || u.status === 'Pending Admin Review' || u.status === 'HOLD') ? (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-amber-950/40 text-amber-400 border border-amber-500/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                              Pending Support Review
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-950/40 text-emerald-400 border border-emerald-500/20">
+                              <Check size={10} />
+                              Active & Verified
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {(u.isBlocked || u.status === 'Pending Support Review' || u.status === 'Pending Admin Review' || u.status === 'HOLD') ? (
+                            <button 
+                              onClick={() => {
+                                updateUser(u.id, { isBlocked: false, status: "APPROVED", isTerminalVerified: true });
+                                toast.success(`Support Team: Activated & unlocked ${u.name}!`);
+                              }}
+                              className="px-3 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase tracking-wider text-[9px] flex items-center gap-1.5 shadow transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                              title="Support Team: Review & Activate Account"
+                            >
+                              <CheckCircle size={13} />
+                              Support Team: Activate User
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => {
+                                updateUser(u.id, { isBlocked: true, status: "Pending Support Review" });
+                                toast.info(`Support Team: Account for ${u.name} placed on hold.`);
+                              }}
+                              className="px-2.5 py-1 rounded border border-[#1E2638] bg-[#0B0F17] hover:bg-red-950/40 text-slate-300 hover:text-red-400 font-bold uppercase tracking-wider text-[9px] flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap"
+                              title="Support Team: Place on hold"
+                            >
+                              <Shield size={12} />
+                              Support: Hold
+                            </button>
+                          )}
+
+                          <button 
+                            onClick={() => updateUser(u.id, { currencyApproved: !u.currencyApproved })}
+                            className={cn(
+                              "px-2 py-1 rounded border transition-all text-[8px] font-bold uppercase flex items-center gap-1 cursor-pointer whitespace-nowrap",
+                              u.currencyApproved 
+                                ? "text-[#F59E0B] border-[#1E2638] bg-[#0B0F17] hover:bg-[#3B2D13]" 
+                                : "text-emerald-400 border-emerald-500/30 bg-[#0B0F17] hover:bg-emerald-500/10"
+                            )}
+                            title={u.currencyApproved ? "Revoke Currency Clearance" : "Grant Currency Clearance"}
+                          >
+                            <TrendingUp size={11} />
+                            {u.currency}: {u.currencyApproved ? 'Revoke' : 'Approve'}
+                          </button>
+                        </div>
                       </div>
-                      <button 
-                        onClick={() => updateUser(u.id, { isBlocked: !u.isBlocked, status: !u.isBlocked ? "HOLD" : "APPROVED" })}
-                        className={cn(
-                          "p-2 rounded border transition-all",
-                          !u.isBlocked 
-                            ? "text-[#F59E0B] border-[#1E2638] bg-[#0B0F17] hover:bg-[#3B2D13]" 
-                            : "text-emerald-400 border-emerald-500/30 bg-[#0B0F17] hover:bg-emerald-500/10"
-                        )}
-                        title={!u.isBlocked ? "Place on Hold" : "Remove Hold"}
-                      >
-                        <Shield size={14} />
-                      </button>
-                      <button 
-                        onClick={() => updateUser(u.id, { currencyApproved: !u.currencyApproved })}
-                        className={cn(
-                          "p-2 rounded border transition-all",
-                          u.currencyApproved 
-                            ? "text-[#F59E0B] border-[#1E2638] bg-[#0B0F17] hover:bg-[#3B2D13]" 
-                            : "text-emerald-400 border-emerald-500/30 bg-[#0B0F17] hover:bg-emerald-500/10"
-                        )}
-                        title={u.currencyApproved ? "Revoke Currency Clearance" : "Grant Currency Clearance"}
-                      >
-                        <TrendingUp size={14} />
-                      </button>
-                    </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -397,7 +536,7 @@ export default function AdminUsers() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-5 border-t border-[#1E2638] pt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-[#1E2638] pt-4">
                 <div className="space-y-1">
                   <label className="text-[8px] font-extrabold text-[#F59E0B] uppercase tracking-wider">Transaction Code</label>
                   <input
@@ -424,6 +563,16 @@ export default function AdminUsers() {
                     type="text"
                     value={newUser.sc}
                     onChange={e => setNewUser({...newUser, sc: e.target.value})}
+                    className="w-full px-2.5 py-1.5 bg-[#0B0F17] text-white border border-[#1E2638] rounded focus:border-[#F59E0B] outline-none font-mono text-xs !bg-[#0B0F17] !text-white"
+                    placeholder="Auto-Gen"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-extrabold text-[#F59E0B] uppercase tracking-wider">Activation PIN</label>
+                  <input
+                    type="text"
+                    value={newUser.activationPin}
+                    onChange={e => setNewUser({...newUser, activationPin: e.target.value})}
                     className="w-full px-2.5 py-1.5 bg-[#0B0F17] text-white border border-[#1E2638] rounded focus:border-[#F59E0B] outline-none font-mono text-xs !bg-[#0B0F17] !text-white"
                     placeholder="Auto-Gen"
                   />

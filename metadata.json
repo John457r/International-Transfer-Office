@@ -1,5 +1,6 @@
 {
   "name": "International Transfer Office",
   "description": "A high-security fintech banking platform for international and local digital banking services.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

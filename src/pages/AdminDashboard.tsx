@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatCurrency, cn } from "../lib/utils";
+import { adminFetch } from "../lib/api";
 import { 
   Users, 
   ArrowUpRight, 
@@ -35,15 +36,15 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/stats")
+    adminFetch("/api/admin/stats")
       .then(res => res.json())
       .then(data => setStats(data));
 
-    fetch("/api/admin/settings")
+    adminFetch("/api/admin/settings")
       .then(res => res.json())
       .then(data => setSettings(data));
 
-    fetch("/api/admin/users")
+    adminFetch("/api/admin/users")
       .then(res => res.json())
       .then(data => setUsers(data));
   }, []);
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       const newSettings = { ...settings, [key]: !settings[key] };
-      const res = await fetch("/api/admin/settings", {
+      const res = await adminFetch("/api/admin/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newSettings)

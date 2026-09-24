@@ -68,7 +68,9 @@ export default function Layout({ user, onLogout }: LayoutProps) {
             <div className="flex items-center gap-6 pl-4 sm:pl-8 border-l border-amber-500/20">
               <div className="text-right hidden md:block">
                 <p className="text-sm font-black uppercase text-white leading-none">{user.name}</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-[#F59E0B] mt-1 opacity-90 drop-shadow-[0_0_2px_rgba(245,158,11,0.5)]">{user.role}</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#F59E0B] mt-1 opacity-90 drop-shadow-[0_0_2px_rgba(245,158,11,0.5)]">
+                  {user.role === 'admin' ? 'Support Team Admin' : 'Verified Client'}
+                </p>
               </div>
               <div className="w-10 h-10 flex items-center justify-center font-black text-base bg-gradient-to-br from-[#F59E0B] to-[#b37000] text-[#0B0F17] border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.4)] relative">
                 <div className="absolute inset-0 bg-white/20 mix-blend-overlay"></div>

@@ -5,14 +5,14 @@ export interface User {
   balance: number;
   accountNumber: string;
   role: 'user' | 'admin';
-  status: 'active' | 'blocked' | 'Pending Admin Review' | 'APPROVED' | 'HOLD';
+  status: 'active' | 'blocked' | 'Pending Admin Review' | 'Pending Support Review' | 'APPROVED' | 'HOLD';
   isBlocked?: boolean;
   currency: 'USD' | 'PGK' | 'NGN';
   currencyApproved: boolean;
   transfersEnabled: boolean;
-  tc: string;
-  vc: string;
-  sc: string;
+  tc?: string;
+  vc?: string;
+  sc?: string;
   currentTC?: string;
   currentVC?: string;
   currentSC?: string;
@@ -20,6 +20,8 @@ export interface User {
   email?: string;
   phone?: string;
   country?: string;
+  isTerminalVerified?: boolean;
+  activationPin?: string;
 }
 
 export interface Transfer {

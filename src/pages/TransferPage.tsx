@@ -4,12 +4,28 @@ import { Shield, Send, Loader2, CheckCircle2, AlertCircle, Clock, Download, Prin
 import { toast } from "sonner";
 import { formatCurrency, cn } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
+import TerminalActivation from "../components/TerminalActivation";
 
 interface TransferPageProps {
   user: User;
+  onUpdateUser?: (updated: User) => void;
 }
 
-export default function TransferPage({ user }: TransferPageProps) {
+export default function TransferPage({ user, onUpdateUser }: TransferPageProps) {
+  const [currentUser, setCurrentUser] = useState<User>(user);
+
+  useEffect(() => {
+    setCurrentUser(user);
+  }, [user]);
+
+  const handleTerminalVerified = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+    if (onUpdateUser) {
+      onUpdateUser(updatedUser);
+    }
+    window.dispatchEvent(new CustomEvent("user-updated", { detail: updatedUser }));
+    localStorage.setItem("ito_user", JSON.stringify(updatedUser));
+  };
   const [step, setStep] = useState(() => {
     const saved = localStorage.getItem("ito_transfer_step");
     return saved ? parseInt(saved) : 1;
@@ -81,34 +97,11 @@ export default function TransferPage({ user }: TransferPageProps) {
     localStorage.setItem("ito_transfer_form", JSON.stringify(formData));
   }, [formData]);
 
-  // Check if user can transfer
-  if (!user.transfersEnabled) {
-    return (
-      <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="bg-[#121824] rounded-xl p-12 text-center border border-[#1E2638] shadow-2xl">
-          <div className="w-20 h-20 bg-red-950/40 text-red-500 border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-            <ShieldAlert size={40} />
-          </div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-3">Transfer Restricted</h2>
-          <p className="text-[#8E9BAE] mb-8 text-sm leading-relaxed">
-            Your account transfer privileges have been temporarily restricted for security clearance verification. Please initiate support chat to complete manual validation.
-          </p>
-          <button 
-            onClick={() => window.dispatchEvent(new CustomEvent('open-support-chat'))}
-            className="w-full py-3.5 bg-[#F59E0B] text-[#0B0F17] font-black rounded hover:bg-[#FF9500] transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] border border-[#1E2638]"
-          >
-            <MessageSquare size={16} />
-            Contact Support Desk
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   useEffect(() => {
-    fetch("/api/admin/settings")
+    fetch("/api/settings")
       .then(res => res.json())
-      .then(data => setSettings(data));
+      .then(data => setSettings(data))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -141,6 +134,40 @@ export default function TransferPage({ user }: TransferPageProps) {
     return () => stopTimer();
   }, [step, securityStep]);
 
+  // Check if terminal is verified
+  if (!currentUser.isTerminalVerified) {
+    return (
+      <TerminalActivation 
+        user={currentUser} 
+        onSuccess={handleTerminalVerified} 
+      />
+    );
+  }
+
+  // Check if user can transfer
+  if (!user.transfersEnabled) {
+    return (
+      <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="bg-[#121824] rounded-xl p-12 text-center border border-[#1E2638] shadow-2xl">
+          <div className="w-20 h-20 bg-red-950/40 text-red-500 border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+            <ShieldAlert size={40} />
+          </div>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-3">Transfer Restricted</h2>
+          <p className="text-[#8E9BAE] mb-8 text-sm leading-relaxed">
+            Your account transfer privileges have been temporarily restricted for security clearance verification. Please initiate support chat to complete manual validation.
+          </p>
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('open-support-chat'))}
+            className="w-full py-3.5 bg-[#F59E0B] text-[#0B0F17] font-black rounded hover:bg-[#FF9500] transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] border border-[#1E2638]"
+          >
+            <MessageSquare size={16} />
+            Contact Support Desk
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const startTimer = () => {
     stopTimer();
     setTimer(60);
@@ -168,7 +195,7 @@ export default function TransferPage({ user }: TransferPageProps) {
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
     if (!settings?.transfersEnabled) {
-      toast.error("Transfers are currently disabled by the administrator.");
+      toast.error("Transfers are currently disabled by the Support Team.");
       return;
     }
     if (parseFloat(formData.amount) > user.balance) {
@@ -204,10 +231,6 @@ export default function TransferPage({ user }: TransferPageProps) {
     setSecurityLoading(true);
     
     try {
-      // Verify code from database
-      const res = await fetch(`/api/user/${user.id}`);
-      const latestUser = await res.json();
-      
       const requiredSteps = [];
       if (settings?.requireTransactionCode) requiredSteps.push(0);
       if (settings?.requireVerificationCode) requiredSteps.push(1);
@@ -227,26 +250,37 @@ export default function TransferPage({ user }: TransferPageProps) {
         }
       }
       
-      // Check code against latest database values
+      // Determine which clearance code the user is submitting
       const currentCodeInput = securityStep === 0 ? formData.transactionCode : 
                          securityStep === 1 ? formData.verificationCode : 
                          formData.switchCode;
-      const correctCode = securityStep === 0 ? latestUser.tc : 
-                         securityStep === 1 ? latestUser.vc : 
-                         latestUser.sc;
+      const codeType = securityStep === 0 ? "tc" : securityStep === 1 ? "vc" : "sc";
+
+      // Verify code strictly against backend without exposing secrets in browser
+      const verifyRes = await fetch("/api/transfers/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          codeType,
+          code: currentCodeInput
+        })
+      });
+
+      const verifyData = await verifyRes.json();
       
-      if (currentCodeInput !== correctCode) {
+      if (!verifyRes.ok || !verifyData.success) {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
-        if (newAttempts >= 3) {
+        if (newAttempts >= 3 || verifyData.locked) {
           setShowSecurityModal(false);
           setShowLockoutModal(true);
           toast.error("Maximum attempts reached. Account locked for transfer.");
-          // Optionally block user in backend
           await fetch(`/api/user/${user.id}/block`, { method: "POST" });
         } else {
-          setErrorAlert(`Invalid ${securityStep === 0 ? 'Transaction' : securityStep === 1 ? 'Verification' : 'Switch'} Code. Attempt ${newAttempts} of 3.`);
-          toast.error(`Invalid Code. Attempt ${newAttempts} of 3.`);
+          const errMsg = verifyData.message || `Invalid ${securityStep === 0 ? 'Transaction' : securityStep === 1 ? 'Verification' : 'Switch'} Code. Attempt ${newAttempts} of 3.`;
+          setErrorAlert(errMsg);
+          toast.error(errMsg);
         }
         setSecurityLoading(false);
         return;
@@ -578,7 +612,7 @@ export default function TransferPage({ user }: TransferPageProps) {
           <AlertCircle className="text-red-400 shrink-0" size={28} />
           <div>
             <h3 className="font-bold text-red-300 text-xs uppercase tracking-tight">Transfers Temporarily Suspended</h3>
-            <p className="text-[10px] text-[#8E9BAE] uppercase tracking-widest mt-1">The administrator has temporarily paused outbound networks for mandatory clearing systems upgrade.</p>
+            <p className="text-[10px] text-[#8E9BAE] uppercase tracking-widest mt-1">The Support Team has temporarily paused outbound networks for mandatory clearing systems upgrade.</p>
           </div>
         </div>
       )}

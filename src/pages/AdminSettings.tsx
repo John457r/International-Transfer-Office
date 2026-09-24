@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { SecuritySettings } from "../types";
 import { Shield, Lock, Bell, Globe, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { adminFetch } from "../lib/api";
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<SecuritySettings | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/settings")
+    adminFetch("/api/admin/settings")
       .then(res => res.json())
       .then(data => setSettings(data));
   }, []);
@@ -22,22 +23,20 @@ export default function AdminSettings() {
     if (!settings) return;
     setLoading(true);
     
-    setTimeout(async () => {
-      try {
-        const response = await fetch("/api/admin/settings", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(settings),
-        });
-        if (response.ok) {
-          toast.success("Security settings updated");
-        }
-      } catch (error) {
-        toast.error("Failed to update settings");
-      } finally {
-        setLoading(false);
+    try {
+      const response = await adminFetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      if (response.ok) {
+        toast.success("Security settings updated");
       }
-    }, 5000);
+    } catch (error) {
+      toast.error("Failed to update settings");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!settings) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-[#F59E0B]" /></div>;

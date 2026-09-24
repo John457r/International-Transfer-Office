@@ -37,9 +37,9 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Account successfully created! Undergoing compliance checks.");
+        toast.success("Account created! Terminal pending Support Team activation.");
         onRegister(data.user);
-        navigate("/dashboard");
+        navigate("/hold");
       } else {
         toast.error(data.message || "Registration failed");
       }
@@ -80,7 +80,7 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-white text-black text-xs font-semibold"
+                  className="w-full pl-9 pr-3 py-2 bg-[#0B0F17]/80 text-white text-xs font-semibold border border-[#1E2638] rounded focus:outline-none focus:border-[#F59E0B] placeholder:text-[#8E9BAE]"
                   placeholder="e.g. John Doe / Maria Gari"
                   required
                 />
@@ -95,7 +95,7 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-white text-black text-xs font-semibold"
+                  className="w-full pl-9 pr-3 py-2 bg-[#0B0F17]/80 text-white text-xs font-semibold border border-[#1E2638] rounded focus:outline-none focus:border-[#F59E0B] placeholder:text-[#8E9BAE]"
                   placeholder="e.g. name@example.com"
                   required
                 />
@@ -112,7 +112,7 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-white text-black text-xs font-semibold"
+                  className="w-full pl-9 pr-3 py-2 bg-[#0B0F17]/80 text-white text-xs font-semibold border border-[#1E2638] rounded focus:outline-none focus:border-[#F59E0B] placeholder:text-[#8E9BAE]"
                   placeholder="e.g. +675 7000 0000"
                   required
                 />
@@ -126,8 +126,7 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
                 <select
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-white text-black text-xs font-semibold focus:outline-none"
-                  style={{ borderRadius: "4px" }}
+                  className="w-full pl-9 pr-3 py-2 bg-[#0B0F17]/80 text-white text-xs font-semibold border border-[#1E2638] rounded focus:outline-none focus:border-[#F59E0B]"
                 >
                   <option value="Papua New Guinea">Papua New Guinea</option>
                   <option value="United States">United States</option>
@@ -146,7 +145,7 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-white text-black text-xs font-semibold"
+                  className="w-full pl-9 pr-3 py-2 bg-[#0B0F17]/80 text-white text-xs font-semibold border border-[#1E2638] rounded focus:outline-none focus:border-[#F59E0B] placeholder:text-[#8E9BAE]"
                   placeholder="CHOOSE USERNAME"
                   required
                 />
@@ -161,7 +160,7 @@ export default function RegisterPage({ onRegister }: RegisterPageProps) {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-white text-black text-xs font-semibold"
+                  className="w-full pl-9 pr-3 py-2 bg-[#0B0F17]/80 text-white text-xs font-semibold border border-[#1E2638] rounded focus:outline-none focus:border-[#F59E0B] placeholder:text-[#8E9BAE]"
                   placeholder="CREATE PASSWORD"
                   required
                 />

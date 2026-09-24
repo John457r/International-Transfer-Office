@@ -20,29 +20,27 @@ export default function CardRequestPage({ user }: CardRequestPageProps) {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(async () => {
-      try {
-        const response = await fetch("/api/card-requests", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user.id,
-            ...formData
-          }),
-        });
+    try {
+      const response = await fetch("/api/card-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          ...formData
+        }),
+      });
 
-        if (response.ok) {
-          setSubmitted(true);
-          toast.success("Card request submitted successfully");
-        } else {
-          toast.error("Failed to submit card request");
-        }
-      } catch (error) {
-        toast.error("An error occurred");
-      } finally {
-        setLoading(false);
+      if (response.ok) {
+        setSubmitted(true);
+        toast.success("Card request submitted successfully");
+      } else {
+        toast.error("Failed to submit card request");
       }
-    }, 5000);
+    } catch (error) {
+      toast.error("An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -53,7 +51,7 @@ export default function CardRequestPage({ user }: CardRequestPageProps) {
         </div>
         <h1 className="text-3xl font-black text-white uppercase tracking-tight">Request Received</h1>
         <p className="text-[#8E9BAE] max-w-md mx-auto font-medium text-xs leading-relaxed uppercase font-mono">
-          Your ATM card request has been submitted. Our team will verify your address and contact details before shipping your personalized card.
+          Your ATM card request has been submitted. Our Support Team will verify your address and contact details before shipping your personalized card.
         </p>
         <div className="pt-8">
           <button 
@@ -93,7 +91,7 @@ export default function CardRequestPage({ user }: CardRequestPageProps) {
                 type="text"
                 disabled
                 value={formData.name}
-                className="w-full px-4 py-3 bg-slate-300 text-[#8E9BAE] cursor-not-allowed font-bold text-xs select-none border border-[#1E2638] rounded"
+                className="w-full px-4 py-3 bg-[#0B0F17]/50 text-[#8E9BAE] cursor-not-allowed font-bold text-xs select-none border border-[#1E2638] rounded"
               />
             </div>
 
@@ -106,7 +104,7 @@ export default function CardRequestPage({ user }: CardRequestPageProps) {
                   rows={3}
                   value={formData.address}
                   onChange={e => setFormData({...formData, address: e.target.value})}
-                  className="w-full pl-10 pr-4 py-3 bg-white text-black text-xs font-black placeholder:text-[#8E9BAE] border border-[#1E2638] rounded focus:border-[#F59E0B]"
+                  className="w-full pl-10 pr-4 py-3 bg-[#0B0F17]/80 text-white text-xs font-semibold placeholder:text-[#8E9BAE] border border-[#1E2638] rounded focus:border-[#F59E0B] outline-none transition-colors"
                   placeholder="Enter your full residential address"
                 />
               </div>
@@ -121,7 +119,7 @@ export default function CardRequestPage({ user }: CardRequestPageProps) {
                   required
                   value={formData.phone}
                   onChange={e => setFormData({...formData, phone: e.target.value})}
-                  className="w-full pl-10 pr-4 py-3 bg-white text-black text-xs font-black placeholder:text-[#8E9BAE] border border-[#1E2638] rounded focus:border-[#F59E0B]"
+                  className="w-full pl-10 pr-4 py-3 bg-[#0B0F17]/80 text-white text-xs font-semibold placeholder:text-[#8E9BAE] border border-[#1E2638] rounded focus:border-[#F59E0B] outline-none transition-colors"
                   placeholder="+1 (555) 000-0000"
                 />
               </div>

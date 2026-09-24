@@ -3,6 +3,7 @@ import { CollectionRequest } from "../types";
 import { cn } from "../lib/utils";
 import { Search, CheckCircle2, XCircle, Clock, Globe, Shield, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { adminFetch } from "../lib/api";
 
 export default function AdminCollections() {
   const [collections, setCollections] = useState<CollectionRequest[]>([]);
@@ -10,7 +11,7 @@ export default function AdminCollections() {
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
   const fetchCollections = () => {
-    fetch("/api/admin/collections")
+    adminFetch("/api/admin/collections")
       .then(res => res.json())
       .then(data => setCollections(data));
   };
@@ -21,7 +22,7 @@ export default function AdminCollections() {
 
   const handleStatusUpdate = async (id: string, status: 'approved' | 'rejected') => {
     try {
-      const response = await fetch(`/api/admin/collections/${id}`, {
+      const response = await adminFetch(`/api/admin/collections/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),

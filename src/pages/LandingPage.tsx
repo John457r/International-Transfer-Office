@@ -94,7 +94,7 @@ export default function LandingPage() {
       role: "Head Treasury Manager",
       company: "Apex Oilfield Solutions",
       location: "Denver, Colorado, United States",
-      text: "Excellent service. The live code monitoring allows our administrative controllers to supervise transfer authorization files securely and prevent clearance holds."
+      text: "Excellent service. The live code monitoring allows our Account Managers to supervise transfer authorization files securely and prevent clearance holds."
     },
     {
       id: 7,
@@ -147,7 +147,7 @@ export default function LandingPage() {
     {
       id: 13,
       name: "Gau Arua",
-      role: "Financial Administrator",
+      role: "Senior Account Manager",
       company: "Rigo Cocoa Growers Syndicate",
       location: "Central Province, Papua New Guinea",
       text: "The ability to run compliance reviews instantly over our cacao export orders has allowed us to scale settlements with our UK chocolate clients."

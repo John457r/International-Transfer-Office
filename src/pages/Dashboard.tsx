@@ -13,7 +13,8 @@ import {
   MessageSquare,
   ShieldCheck,
   Zap,
-  Lock
+  Lock,
+  ShieldAlert
 } from "lucide-react";
 
 interface DashboardProps {
@@ -33,6 +34,43 @@ export default function Dashboard({ user }: DashboardProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-slate-200 text-xs relative z-10">
+      {/* Persistent Terminal Verification Security Alert Banner */}
+      {!user.isTerminalVerified && (
+        <div 
+          id="terminal-security-alert-banner"
+          className="bg-amber-950/90 backdrop-blur-md border-2 border-amber-500 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_0_25px_rgba(245,158,11,0.25)] animate-in fade-in slide-in-from-top-2 duration-300"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-9 h-9 rounded bg-amber-500 text-[#0B0F17] flex items-center justify-center shrink-0 font-black shadow-md">
+              <ShieldAlert size={20} className="stroke-[2.5]" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-black text-amber-300 uppercase tracking-tight">
+                SECURITY ALERT: Unverified Terminal. Outbound transfers are currently restricted.
+              </p>
+              <p className="text-[10px] text-amber-200/80 font-medium mt-0.5">
+                Terminal verification required for all outbound international wire transfers.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open-support-chat'))}
+              className="px-3 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded text-[9px] font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <MessageSquare size={13} />
+              Live Chat Support
+            </button>
+            <a
+              href="/transfer"
+              className="px-4 py-2 bg-[#F59E0B] text-[#0B0F17] hover:bg-[#FF9500] font-black text-[9px] uppercase tracking-widest rounded transition-all shadow-md flex items-center gap-1.5"
+            >
+              Verify Terminal
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Custom Error Alert */}
       {user.customError && (
         <div className="bg-red-950/40 backdrop-blur-md border-l-4 border-red-500 p-5 rounded border border-red-900/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_0_15px_rgba(239,68,68,0.1)]">

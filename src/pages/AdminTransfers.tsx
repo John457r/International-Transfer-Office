@@ -3,13 +3,14 @@ import { Transfer } from "../types";
 import { formatCurrency, cn } from "../lib/utils";
 import { Search, Filter, Clock, CheckCircle2, MoreVertical, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { adminFetch } from "../lib/api";
 
 export default function AdminTransfers() {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchTransfers = () => {
-    fetch("/api/admin/transfers")
+    adminFetch("/api/admin/transfers")
       .then(res => res.json())
       .then(data => setTransfers(data));
   };
@@ -20,7 +21,7 @@ export default function AdminTransfers() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      const res = await fetch(`/api/admin/transfers/${id}`, {
+      const res = await adminFetch(`/api/admin/transfers/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status })

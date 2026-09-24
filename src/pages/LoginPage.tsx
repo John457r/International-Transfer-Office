@@ -18,30 +18,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     e.preventDefault();
     setLoading(true);
 
-    // Hardcoded Admin Login for immediate access
-    if (username === "johnfidelis550@gmail.com" && password === "Fidelis90@") {
-      const adminUser: User = {
-        id: "2",
-        username: "johnfidelis550@gmail.com",
-        name: "System Administrator",
-        balance: 0,
-        accountNumber: "ADMIN-001",
-        role: "admin",
-        status: "active",
-        currency: "USD",
-        currencyApproved: true,
-        transfersEnabled: true,
-        tc: "000000",
-        vc: "000000",
-        sc: "000000"
-      };
-      onLogin(adminUser);
-      toast.success(`Welcome back, ${adminUser.name}`);
-      navigate('/admin');
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -52,12 +28,19 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       const data = await response.json();
 
       if (response.ok) {
+        if (data.token) {
+          localStorage.setItem("ito_admin_token", data.token);
+        } else {
+          localStorage.removeItem("ito_admin_token");
+        }
         onLogin(data.user);
         toast.success(`Welcome back, ${data.user.name}`);
-        if (data.user.status === "Pending Admin Review") {
-          navigate('/dashboard'); // Will load compliance hold directly
+        if (data.user.role === 'admin') {
+          navigate('/admin');
+        } else if (data.user.isBlocked || data.user.status === "Pending Support Review" || data.user.status === "Pending Admin Review" || data.user.status === "HOLD") {
+          navigate('/hold');
         } else {
-          navigate(data.user.role === 'admin' ? '/admin' : '/dashboard');
+          navigate('/dashboard');
         }
       } else {
         toast.error(data.message || "Login failed");
@@ -97,7 +80,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white text-black font-semibold rounded outline-none placeholder:text-[#8E9BAE]"
+                className="w-full pl-12 pr-4 py-3 bg-[#0B0F17]/80 text-white font-semibold rounded outline-none placeholder:text-[#8E9BAE] border border-[#1E2638] focus:border-[#F59E0B] transition-colors"
                 placeholder="ENTER USERNAME"
                 required
               />
@@ -112,7 +95,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white text-black font-semibold rounded outline-none placeholder:text-[#8E9BAE]"
+                className="w-full pl-12 pr-4 py-3 bg-[#0B0F17]/80 text-white font-semibold rounded outline-none placeholder:text-[#8E9BAE] border border-[#1E2638] focus:border-[#F59E0B] transition-colors"
                 placeholder="ENTER PASSWORD"
                 required
               />

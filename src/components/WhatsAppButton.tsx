@@ -66,8 +66,10 @@ export default function WhatsAppButton({ user }: { user?: User | null }) {
       setIsOpen(true);
     };
     window.addEventListener("open-support-chat", handleOpenSupport);
+    window.addEventListener("open-live-chat", handleOpenSupport);
     return () => {
       window.removeEventListener("open-support-chat", handleOpenSupport);
+      window.removeEventListener("open-live-chat", handleOpenSupport);
     };
   }, []);
 

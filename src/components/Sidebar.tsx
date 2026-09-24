@@ -87,7 +87,8 @@ export default function Sidebar({ user, onLogout, isOpen, isMobileOpen, onClose,
         {/* Desktop Toggle Button */}
         <button 
           onClick={toggleSidebar}
-          className="hidden lg:flex absolute -right-3 top-34 w-6 h-6 bg-[#F59E0B] text-[#0B0F17] items-center justify-center rounded-full shadow-md z-50 border border-[#1E2638]"
+          className="hidden lg:flex absolute -right-3 top-5 w-6 h-6 bg-[#F59E0B] text-[#0B0F17] items-center justify-center rounded-full shadow-md z-50 border border-[#1E2638] hover:bg-[#FF9500] cursor-pointer transition-colors"
+          title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
         >
           {isOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
         </button>

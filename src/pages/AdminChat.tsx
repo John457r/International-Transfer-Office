@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Send, User as UserIcon } from "lucide-react";
 import { formatCurrency, cn } from "../lib/utils";
+import { adminFetch } from "../lib/api";
 
 export default function AdminChat() {
   const [messages, setMessages] = useState<any[]>([]);
@@ -10,14 +11,14 @@ export default function AdminChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchChats = () => {
-    fetch("/api/admin/chat")
+    adminFetch("/api/admin/chat")
       .then(res => res.json())
       .then(data => setMessages(data))
       .catch(() => {}); // ignore network errors
   };
 
   useEffect(() => {
-    fetch("/api/admin/users")
+    adminFetch("/api/admin/users")
       .then(res => res.json())
       .then(data => setUsers(data))
       .catch(() => {});
@@ -34,7 +35,7 @@ export default function AdminChat() {
 
   useEffect(() => {
     if (selectedUserId) {
-      fetch("/api/admin/chat/mark-read", {
+      adminFetch("/api/admin/chat/mark-read", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: selectedUserId })
