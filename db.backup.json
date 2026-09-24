@@ -40,7 +40,8 @@
       "currentVC": "",
       "currentSC": "",
       "isTerminalVerified": true,
-      "activationPin": "999999"
+      "activationPin": "999999",
+      "isBlocked": false
     },
     {
       "id": "3",
@@ -186,6 +187,32 @@
       "customError": "",
       "isTerminalVerified": true,
       "activationPin": "371202"
+    },
+    {
+      "id": "1790264322782",
+      "username": "johnnabofa@gmail.com",
+      "password": "qwertyuiop",
+      "name": "Solomon  vi",
+      "email": "johnnabofa@gmail.com",
+      "phone": "+6758659688",
+      "country": "Papua New Guinea",
+      "balance": 2510600,
+      "accountNumber": "ITO-85785096",
+      "status": "APPROVED",
+      "isBlocked": false,
+      "role": "user",
+      "currency": "PGK",
+      "currencyApproved": false,
+      "transfersEnabled": true,
+      "tc": "351579",
+      "vc": "507040",
+      "sc": "411107",
+      "currentTC": "351579",
+      "currentVC": "507040",
+      "currentSC": "411107",
+      "customError": "",
+      "isTerminalVerified": true,
+      "activationPin": "876836"
     }
   ],
   "transfers": [
@@ -208,6 +235,28 @@
       "amount": 15000,
       "status": "pending",
       "date": "2024-03-22T14:30:00Z"
+    },
+    {
+      "id": "t1790264709096",
+      "userId": "1790264322782",
+      "trackingId": "IST-PGK-16910",
+      "bankName": "BSP ",
+      "accountName": "John Solomon",
+      "accountNumber": "878756894",
+      "amount": 12000,
+      "status": "failed",
+      "date": "2026-09-24T15:45:09.096Z"
+    },
+    {
+      "id": "t1790264742118",
+      "userId": "1790264322782",
+      "trackingId": "IST-PGK-16910",
+      "bankName": "BSP ",
+      "accountName": "John Solomon",
+      "accountNumber": "878756894",
+      "amount": 12000,
+      "status": "failed",
+      "date": "2026-09-24T15:45:42.118Z"
     }
   ],
   "collections": [],
@@ -243,6 +292,36 @@
       "token": "admin_1790263960602_68740067032decc0e2c67ee275fe6174",
       "userId": "2",
       "createdAt": "2026-09-24T15:32:40.602Z"
+    },
+    {
+      "token": "admin_1790264170622_9bd941370999408fbdda7ff23c4211a0",
+      "userId": "2",
+      "createdAt": "2026-09-24T15:36:10.622Z"
+    },
+    {
+      "token": "admin_1790264242557_84706356c7dd769d2ad78240477bd5c9",
+      "userId": "2",
+      "createdAt": "2026-09-24T15:37:22.557Z"
+    },
+    {
+      "token": "admin_1790264363198_105c1985aaa46ccbaf34e90b32a5e352",
+      "userId": "2",
+      "createdAt": "2026-09-24T15:39:23.198Z"
+    },
+    {
+      "token": "admin_1790264485241_57e975dfebf4cf628a260c17ef9e08bd",
+      "userId": "2",
+      "createdAt": "2026-09-24T15:41:25.241Z"
+    },
+    {
+      "token": "admin_1790264597726_2773050c008309144f99b1f23209622c",
+      "userId": "2",
+      "createdAt": "2026-09-24T15:43:17.726Z"
+    },
+    {
+      "token": "admin_1790266658907_87fc0bab67343c6051a509f2b2fe44bc",
+      "userId": "2",
+      "createdAt": "2026-09-24T16:17:38.907Z"
     }
   ],
   "settings": {

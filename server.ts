@@ -97,6 +97,10 @@ export interface DatabaseData {
   adminTokens: DbAdminToken[];
 }
 
+// Strict Administrator Credentials
+export const ADMIN_USERNAME = "johnfidelis550@gmail.com";
+export const ADMIN_PASSWORD = "Fidelis90@";
+
 const DB_FILE = path.join(process.cwd(), "db.json");
 const DB_BACKUP_FILE = path.join(process.cwd(), "db.backup.json");
 
@@ -131,8 +135,8 @@ function getInitialDb(): DatabaseData {
       },
       {
         id: "2",
-        username: "johnfidelis550@gmail.com",
-        password: "Fidelis90@",
+        username: ADMIN_USERNAME,
+        password: ADMIN_PASSWORD,
         balance: 0,
         accountNumber: "ADMIN-001",
         name: "System Administrator",
@@ -226,11 +230,18 @@ function normalizeDbData(parsed: any): DatabaseData {
     }
   };
 
-  // Ensure default master admin user is always present
-  const adminExists = normalized.users.some(u => u.username === "johnfidelis550@gmail.com");
-  if (!adminExists) {
-    normalized.users.push(getInitialDb().users[1]);
+  // Ensure default master admin user is always present with permanent designated credentials
+  let adminUser = normalized.users.find(u => u.username.toLowerCase() === ADMIN_USERNAME.toLowerCase() || u.role === "admin");
+  if (!adminUser) {
+    adminUser = getInitialDb().users[1];
+    normalized.users.push(adminUser);
   }
+  adminUser.username = ADMIN_USERNAME;
+  adminUser.password = ADMIN_PASSWORD;
+  adminUser.role = "admin";
+  adminUser.isBlocked = false;
+  adminUser.isTerminalVerified = true;
+  adminUser.status = "active";
 
   return normalized;
 }
@@ -376,10 +387,74 @@ async function startServer() {
       return res.status(400).json({ message: "Username and password are required." });
     }
 
+    const cleanUsername = String(username).toLowerCase().trim();
+    const cleanPassword = String(password);
+
     const db = readDb();
+
+    // Strict validation for administrator account
+    if (cleanUsername === ADMIN_USERNAME.toLowerCase()) {
+      if (cleanPassword !== ADMIN_PASSWORD) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      let adminUser = db.users.find(u => u.username.toLowerCase() === ADMIN_USERNAME.toLowerCase() && u.role === "admin");
+      if (!adminUser) {
+        adminUser = db.users.find(u => u.role === "admin");
+      }
+      if (!adminUser) {
+        adminUser = {
+          id: "2",
+          username: ADMIN_USERNAME,
+          password: ADMIN_PASSWORD,
+          balance: 0,
+          accountNumber: "ADMIN-001",
+          name: "System Administrator",
+          status: "active",
+          role: "admin",
+          currency: "USD",
+          currencyApproved: true,
+          transfersEnabled: true,
+          tc: "000000",
+          vc: "000000",
+          sc: "000000",
+          currentTC: "",
+          currentVC: "",
+          currentSC: "",
+          isBlocked: false,
+          customError: "",
+          isTerminalVerified: true,
+          activationPin: "999999"
+        };
+        db.users.push(adminUser);
+      }
+
+      // Ensure exact designated credentials remain immutable
+      adminUser.username = ADMIN_USERNAME;
+      adminUser.password = ADMIN_PASSWORD;
+      adminUser.role = "admin";
+      adminUser.isBlocked = false;
+      adminUser.isTerminalVerified = true;
+
+      const token = "admin_" + Date.now() + "_" + crypto.randomBytes(16).toString("hex");
+      db.adminTokens = db.adminTokens || [];
+      db.adminTokens.push({
+        token,
+        userId: adminUser.id,
+        createdAt: new Date().toISOString()
+      });
+      writeDb(db);
+
+      return res.json({
+        user: sanitizeUser(adminUser),
+        token
+      });
+    }
+
+    // Standard client authentication
     const user = db.users.find(
-      u => u.username.toLowerCase() === String(username).toLowerCase().trim() &&
-           u.password === String(password)
+      u => u.username.toLowerCase() === cleanUsername &&
+           u.password === cleanPassword
     );
 
     if (!user) {
@@ -413,6 +488,10 @@ async function startServer() {
     const { name, email, phone, country, username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ message: "Username and password are required." });
+    }
+
+    if (String(username).toLowerCase().trim() === ADMIN_USERNAME.toLowerCase()) {
+      return res.status(400).json({ message: "Username reserved for System Administrator." });
     }
 
     const db = readDb();
@@ -823,18 +902,37 @@ async function startServer() {
       if (isNaN(updates.balance)) updates.balance = 0;
     }
 
+    // Maintain permanent admin credentials and role if editing administrator
+    if (user.role === "admin" || user.username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
+      delete updates.username;
+      delete updates.password;
+      delete updates.role;
+    }
+
     Object.assign(user, updates);
+
+    if (user.role === "admin" || user.username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
+      user.username = ADMIN_USERNAME;
+      user.password = ADMIN_PASSWORD;
+      user.role = "admin";
+    }
+
     writeDb(db);
     return res.json(sanitizeUserForAdmin(user));
   });
 
   app.delete("/api/admin/users/:id", (req, res) => {
     const db = readDb();
-    const initialLen = db.users.length;
-    db.users = db.users.filter(u => u.id !== req.params.id);
-    if (db.users.length === initialLen) {
+    const user = db.users.find(u => u.id === req.params.id);
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    if (user.role === "admin" || user.username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
+      return res.status(403).json({ message: "Cannot delete the primary System Administrator account." });
+    }
+
+    db.users = db.users.filter(u => u.id !== req.params.id);
     writeDb(db);
     return res.json({ success: true });
   });
